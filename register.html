@@ -1,0 +1,92 @@
+﻿<!doctype html>
+<html lang="bg">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/jpeg" href="logoEliteLingua.jpg" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="elite-ui.css" />
+    <title>Elite Class - Регистрация</title>
+  </head>
+  <body class="elite-bg">
+    <main class="container elite-shell">
+      <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-7">
+          <section class="card elite-card">
+            <div class="card-body p-4 p-md-5">
+              <div class="elite-brand mb-3">
+                <img class="elite-logo" src="logoEliteLingua.jpg" alt="Elite Class Logo" />
+                <div>
+                  <h1 class="h4 mb-0">Elite Class</h1>
+                  <p class="elite-muted small mb-0">eDiary Platform</p>
+                </div>
+              </div>
+              <h2 class="h5 mb-3"><i class="bi bi-person-plus me-2"></i>Регистрация</h2>
+              <form id="register-form" class="vstack gap-3">
+                <div>
+                  <label class="form-label fw-semibold" for="fullName">Име и фамилия</label>
+                  <input id="fullName" class="form-control" required />
+                </div>
+                <div>
+                  <label class="form-label fw-semibold" for="email">Имейл</label>
+                  <input id="email" class="form-control" type="email" required />
+                </div>
+                <div>
+                  <label class="form-label fw-semibold" for="password">Парола</label>
+                  <input id="password" class="form-control" type="password" minlength="8" required />
+                  <div class="form-text">Поне 8 символа с главна и малка буква, цифра и специален символ.</div>
+                </div>
+                <div>
+                  <label class="form-label fw-semibold" for="role">Роля</label>
+                  <select id="role" class="form-select" required>
+                    <option value="student">Ученик</option>
+                    <option value="parent">Родител</option>
+                    <option value="teacher">Учител</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Създай профил</button>
+              </form>
+              <p class="msg mt-3 mb-2 small text-danger" id="msg"></p>
+              <div class="small d-flex flex-column gap-2">
+                <a href="login.html">Имаш акаунт? Вход</a>
+                <a href="index.html">Към начална страница</a>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+    <footer class="elite-footer py-4">
+      <div class="container">
+        <div class="row g-3">
+          <div class="col-12 col-md-4">
+            <h3>Elite Class</h3>
+            <p class="small mb-0">Регистрация в системата на езиковата школа.</p>
+          </div>
+          <div class="col-6 col-md-4">
+            <h3>Връзки</h3>
+            <div class="d-flex flex-column gap-1 small">
+              <a href="index.html">Начало</a>
+              <a href="login.html">Вход</a>
+              <a href="forgot-password.html">Забравена парола</a>
+            </div>
+          </div>
+          <div class="col-6 col-md-4">
+            <h3>Контакт</h3>
+            <p class="small mb-1"><i class="bi bi-envelope me-1"></i>office@elitelingua.bg</p>
+            <p class="small mb-0"><i class="bi bi-telephone me-1"></i>+359 700 12 345</p>
+          </div>
+        </div>
+      </div>
+    </footer>
+    <script type="module" src="./src/auth/register.js"></script>
+  </body>
+</html>
+
+
+
+
+
+
+
