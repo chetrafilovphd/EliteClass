@@ -13,6 +13,7 @@ const toDateInput = document.getElementById('to-date');
 const reloadBtn = document.getElementById('reload-btn');
 const eventsBody = document.getElementById('events-body');
 const logoutBtn = document.getElementById('logout-btn');
+const navLogoutBtn = document.getElementById('nav-logout-btn');
 const kpiCalTotalEl = document.getElementById('kpi-cal-total');
 const kpiCalWeekEl = document.getElementById('kpi-cal-week');
 const kpiCalGlobalEl = document.getElementById('kpi-cal-global');
@@ -321,10 +322,13 @@ reloadBtn?.addEventListener('click', async () => {
   await loadEvents();
 });
 
-logoutBtn?.addEventListener('click', async () => {
+async function logout() {
   await supabase.auth.signOut();
   window.location.href = 'login.html';
-});
+}
+
+logoutBtn?.addEventListener('click', logout);
+navLogoutBtn?.addEventListener('click', logout);
 
 (async function init() {
   const ok = await requireAuth();

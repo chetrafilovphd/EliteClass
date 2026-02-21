@@ -5,6 +5,7 @@ const studentsBody = document.getElementById('students-body');
 const manageSection = document.getElementById('manage-section');
 const addForm = document.getElementById('add-student-form');
 const logoutBtn = document.getElementById('logout-btn');
+const navLogoutBtn = document.getElementById('nav-logout-btn');
 
 const lessonManageSection = document.getElementById('lesson-manage-section');
 const createLessonForm = document.getElementById('create-lesson-form');
@@ -859,10 +860,13 @@ createHomeworkForm?.addEventListener('submit', async (e) => {
   await loadHomeworks();
 });
 
-logoutBtn?.addEventListener('click', async () => {
+async function logout() {
   await supabase.auth.signOut();
   window.location.href = 'login.html';
-});
+}
+
+logoutBtn?.addEventListener('click', logout);
+navLogoutBtn?.addEventListener('click', logout);
 
 (async function init() {
   const ok = await requireAuth();

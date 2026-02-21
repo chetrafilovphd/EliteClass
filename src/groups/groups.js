@@ -5,6 +5,7 @@ const bodyEl = document.getElementById('groups-body');
 const createSection = document.getElementById('create-section');
 const createForm = document.getElementById('create-group-form');
 const logoutBtn = document.getElementById('logout-btn');
+const navLogoutBtn = document.getElementById('nav-logout-btn');
 const kpiGroupsVisibleEl = document.getElementById('kpi-groups-visible');
 const kpiGroupsRoleEl = document.getElementById('kpi-groups-role');
 const kpiGroupsCreateEl = document.getElementById('kpi-groups-create');
@@ -222,10 +223,13 @@ createForm?.addEventListener('submit', async (e) => {
   await loadGroups();
 });
 
-logoutBtn?.addEventListener('click', async () => {
+async function logout() {
   await supabase.auth.signOut();
   window.location.href = 'login.html';
-});
+}
+
+logoutBtn?.addEventListener('click', logout);
+navLogoutBtn?.addEventListener('click', logout);
 
 (async function init() {
   const ok = await requireAuth();

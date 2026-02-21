@@ -11,6 +11,7 @@ const bodyEl = document.getElementById('links-body');
 const invitesBodyEl = document.getElementById('invites-body');
 const usersBodyEl = document.getElementById('users-body');
 const logoutBtn = document.getElementById('logout-btn');
+const navLogoutBtn = document.getElementById('nav-logout-btn');
 const kpiParentsEl = document.getElementById('kpi-pl-parents');
 const kpiStudentsEl = document.getElementById('kpi-pl-students');
 const kpiLinksEl = document.getElementById('kpi-pl-links');
@@ -423,10 +424,13 @@ inviteFormEl?.addEventListener('submit', async (e) => {
   await loadInvites();
 });
 
-logoutBtn?.addEventListener('click', async () => {
+async function logout() {
   await supabase.auth.signOut();
   window.location.href = 'login.html';
-});
+}
+
+logoutBtn?.addEventListener('click', logout);
+navLogoutBtn?.addEventListener('click', logout);
 
 (async function init() {
   const ok = await requireAdmin();
