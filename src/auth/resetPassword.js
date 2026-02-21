@@ -1,7 +1,23 @@
-﻿import { supabase } from '../lib/supabaseClient';
+﻿import { supabase } from '../lib/supabaseClient.js';
 
 const form = document.getElementById('reset-form');
 const msg = document.getElementById('msg');
+const passwordInput = document.getElementById('password');
+const togglePasswordBtn = document.getElementById('toggle-password');
+
+if (togglePasswordBtn && passwordInput) {
+  const setVisible = (visible) => {
+    passwordInput.type = visible ? 'text' : 'password';
+    togglePasswordBtn.innerHTML = visible ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+  };
+
+  togglePasswordBtn.addEventListener('mouseenter', () => setVisible(true));
+  togglePasswordBtn.addEventListener('mouseleave', () => setVisible(false));
+  togglePasswordBtn.addEventListener('focus', () => setVisible(true));
+  togglePasswordBtn.addEventListener('blur', () => setVisible(false));
+  togglePasswordBtn.addEventListener('touchstart', () => setVisible(true), { passive: true });
+  togglePasswordBtn.addEventListener('touchend', () => setVisible(false));
+}
 
 function isStrongPassword(password) {
   const hasUpper = /[A-Z]/.test(password);
@@ -34,5 +50,6 @@ form.addEventListener('submit', async (e) => {
     msg.textContent = `Грешка: ${err.message}`;
   }
 });
+
 
 

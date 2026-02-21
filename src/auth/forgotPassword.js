@@ -1,4 +1,4 @@
-﻿import { supabase } from '../lib/supabaseClient';
+﻿import { supabase } from '../lib/supabaseClient.js';
 
 const form = document.getElementById('forgot-form');
 const msg = document.getElementById('msg');
@@ -21,4 +21,5 @@ form.addEventListener('submit', async (e) => {
     msg.textContent = `Грешка: ${err.message}`;
   }
 });
+
 
