@@ -1,4 +1,4 @@
-﻿import { supabase } from '../lib/supabaseClient';
+﻿import { supabase } from '../lib/supabaseClient.js';
 
 const msgEl = document.getElementById('msg');
 const bodyEl = document.getElementById('groups-body');
@@ -232,5 +232,6 @@ logoutBtn?.addEventListener('click', async () => {
   if (!ok) return;
   await loadGroups();
 })();
+
 
 
