@@ -1,4 +1,4 @@
-﻿import { supabase } from '../lib/supabaseClient';
+﻿import { supabase } from '../lib/supabaseClient.js';
 
 const msgEl = document.getElementById('msg');
 const manageSection = document.getElementById('manage-section');
@@ -336,6 +336,7 @@ logoutBtn?.addEventListener('click', async () => {
   await loadManagedGroups();
   await loadEvents();
 })();
+
 
 
 
