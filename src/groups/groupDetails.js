@@ -1,4 +1,4 @@
-﻿import { supabase } from '../lib/supabaseClient';
+﻿import { supabase } from '../lib/supabaseClient.js';
 
 const msgEl = document.getElementById('msg');
 const studentsBody = document.getElementById('students-body');
@@ -38,6 +38,7 @@ const groupLevelEl = document.getElementById('group-level');
 
 const params = new URLSearchParams(window.location.search);
 const groupId = params.get('groupId');
+const lessonIdFromQuery = params.get('lessonId');
 
 let currentUser = null;
 let currentRole = null;
@@ -394,6 +395,12 @@ async function loadLessons() {
   lessonSelect.innerHTML = data
     .map((lesson) => `<option value="${escapeHtml(lesson.id)}">${escapeHtml(lesson.lesson_date)} - ${escapeHtml(lesson.topic)}</option>`)
     .join('');
+
+  if (lessonIdFromQuery && data.some((lesson) => lesson.id === lessonIdFromQuery)) {
+    lessonSelect.value = lessonIdFromQuery;
+    await loadAttendanceForSelectedLesson();
+    showMessage('Зареден е избраният урок и присъствията му.');
+  }
 }
 
 createLessonForm?.addEventListener('submit', async (e) => {
@@ -876,5 +883,6 @@ logoutBtn?.addEventListener('click', async () => {
   await loadHomeworks();
   await loadHomeworkSubmissionsForManagers();
 })();
+
 
 
