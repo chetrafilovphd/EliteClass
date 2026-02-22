@@ -131,14 +131,14 @@ npm run build
 ## 9) Demo Credentials
 
 Use the prepared credentials shared with exam reviewers:
-- Admin: `[...]`
-- Teacher: `[...]`
-- Student: `[...]`
-- Parent: `[...]`
+- Admin account: provided separately
+- Teacher account: provided separately
+- Student account: provided separately
+- Parent account: provided separately
 
 ## 10) Deployment
 
-Live URL: `[...]`
+Live URL: `https://eliteclassediary.netlify.app`
 
 Recommended platforms:
 - Vercel
