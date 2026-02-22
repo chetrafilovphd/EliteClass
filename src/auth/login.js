@@ -76,18 +76,18 @@ form.addEventListener('submit', async (e) => {
       .eq('id', userId)
       .maybeSingle();
 
-    const needsRoleSync = !profileRow || profileRow.role !== metaRole;
     const needsNameSync = !profileRow || (!profileRow.full_name && !!metaName);
-
-    if (needsRoleSync || needsNameSync) {
+    if (!profileRow) {
       await supabase.from('profiles').upsert(
         {
           id: userId,
-          role: needsRoleSync ? metaRole : profileRow.role,
-          full_name: needsNameSync ? metaName : profileRow.full_name,
+          role: metaRole,
+          full_name: metaName || 'Потребител',
         },
         { onConflict: 'id' }
       );
+    } else if (needsNameSync) {
+      await supabase.from('profiles').update({ full_name: metaName }).eq('id', userId);
     }
 
     showMessage('Успешен вход. Пренасочване...', 'success');
