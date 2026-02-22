@@ -199,11 +199,6 @@ async function ensureProfile(session) {
       nextValues.full_name = session.user.user_metadata.full_name;
     }
 
-    const metaRole = sanitizeRole(session.user.user_metadata?.role);
-    if (metaRole && profile.role !== 'admin' && profile.role !== metaRole) {
-      nextValues.role = metaRole;
-    }
-
     if (Object.keys(nextValues).length > 0) {
       await supabase.from('profiles').update(nextValues).eq('id', userId);
       Object.assign(profile, nextValues);
