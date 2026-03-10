@@ -14,6 +14,11 @@ function showMessage(text, type = 'danger') {
   else msg.classList.add('text-danger');
 }
 
+function isFetchAvailabilityError(err) {
+  const message = String(err?.message || '').toLowerCase();
+  return message.includes('failed to fetch') || message.includes('fetch failed') || message.includes('networkerror');
+}
+
 function normalizeRole(role) {
   const allowed = ['teacher', 'student', 'parent'];
   return allowed.includes(role) ? role : 'student';
@@ -97,6 +102,8 @@ form.addEventListener('submit', async (e) => {
   } catch (err) {
     if (String(err?.message || '').toLowerCase().includes('email not confirmed')) {
       showMessage('Имейлът не е потвърден. Отвори линка от пощата си и опитай отново.', 'warning');
+    } else if (isFetchAvailabilityError(err)) {
+      showMessage('Връзката със сървъра е недостъпна в момента. Провери дали Supabase проектът е Active и не е paused/restoring, след което опитай отново.', 'warning');
     } else {
       showMessage(`Грешка при вход: ${err.message}`);
     }
