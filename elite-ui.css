@@ -476,4 +476,46 @@ h6,
   .elite-partner-card {
     width: 250px;
   }
+
+  /* Denser, more legible data tables on phones */
+  .elite-card > .card-body {
+    padding: 1rem !important;
+  }
+
+  .table {
+    font-size: 0.9rem;
+  }
+
+  .table td,
+  .table th {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .table td .btn {
+    white-space: nowrap;
+  }
+
+  /* Full-width, tappable nav items when the menu is expanded */
+  .elite-appbar .navbar-nav {
+    padding-top: 0.5rem;
+    gap: 0.15rem;
+  }
+
+  .elite-appbar .nav-link {
+    padding: 0.6rem 0.7rem;
+  }
+
+  .elite-appbar .navbar-nav .btn {
+    width: 100%;
+    margin-top: 0.35rem;
+  }
+
+  h1.h4 {
+    font-size: 1.2rem;
+  }
+
+  .elite-kpi-value {
+    font-size: 1rem;
+  }
 }

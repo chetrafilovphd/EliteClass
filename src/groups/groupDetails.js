@@ -4,6 +4,7 @@ const msgEl = document.getElementById('msg');
 const studentsBody = document.getElementById('students-body');
 const manageSection = document.getElementById('manage-section');
 const addForm = document.getElementById('add-student-form');
+const addStudentSelect = document.getElementById('student-id');
 const logoutBtn = document.getElementById('logout-btn');
 const navLogoutBtn = document.getElementById('nav-logout-btn');
 
@@ -50,6 +51,7 @@ const lessonIdFromQuery = params.get('lessonId');
 let currentUser = null;
 let currentRole = null;
 let groupStudents = [];
+const studentNames = new Map(); // student_id -> full_name
 
 function showMessage(text) {
   msgEl.textContent = text;
@@ -71,6 +73,26 @@ function escapeHtml(text) {
 
 function canManage() {
   return currentRole === 'admin' || currentRole === 'teacher';
+}
+
+// Human-friendly label for a student id: full name if known, else a short id.
+function studentLabel(id) {
+  const name = studentNames.get(id);
+  if (name) return name;
+  return id ? `#${String(id).slice(0, 8)}` : '-';
+}
+
+async function loadStudentNames(ids) {
+  const unique = [...new Set((ids || []).filter(Boolean))];
+  if (unique.length === 0) return;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .in('id', unique);
+
+  if (error) return; // fall back to short ids
+  (data || []).forEach((p) => studentNames.set(p.id, p.full_name || null));
 }
 
 function canSubmitHomework() {
@@ -241,12 +263,41 @@ async function loadGroup() {
 function renderStudentSelectOptions() {
   const optionsHtml = groupStudents.length
     ? groupStudents
-        .map((row) => `<option value="${escapeHtml(row.student_id)}">${escapeHtml(row.student_id)}</option>`)
+        .map((row) => `<option value="${escapeHtml(row.student_id)}">${escapeHtml(studentLabel(row.student_id))}</option>`)
         .join('')
     : '<option value="">Няма ученици</option>';
 
   if (gradeStudentSelect) gradeStudentSelect.innerHTML = optionsHtml;
   if (remarkStudentSelect) remarkStudentSelect.innerHTML = optionsHtml;
+}
+
+// Populate the "add student" dropdown with students not yet in this group.
+async function loadAddStudentOptions() {
+  if (!addStudentSelect) return;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .eq('role', 'student')
+    .order('full_name', { nullsFirst: false });
+
+  if (error) {
+    addStudentSelect.innerHTML = '<option value="">(грешка при зареждане на ученици)</option>';
+    return;
+  }
+
+  const enrolled = new Set(groupStudents.map((r) => r.student_id));
+  const available = (data || []).filter((s) => !enrolled.has(s.id));
+
+  if (available.length === 0) {
+    addStudentSelect.innerHTML = '<option value="">Няма свободни ученици</option>';
+    return;
+  }
+
+  addStudentSelect.innerHTML = '<option value="">Избери ученик…</option>'
+    + available
+        .map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.full_name || `#${String(s.id).slice(0, 8)}`)}</option>`)
+        .join('');
 }
 
 async function loadStudents() {
@@ -262,11 +313,13 @@ async function loadStudents() {
   }
 
   groupStudents = data || [];
+  await loadStudentNames(groupStudents.map((r) => r.student_id));
   renderStudentSelectOptions();
+  if (canManage()) await loadAddStudentOptions();
   setKpiText(kpiStudentsEl, String(groupStudents.length));
 
   if (!data || data.length === 0) {
-    studentsBody.innerHTML = '<tr><td colspan="4" class="elite-empty"><i class="bi bi-inbox"></i>Няма ученици в тази група.</td></tr>';
+    studentsBody.innerHTML = '<tr><td colspan="3" class="elite-empty"><i class="bi bi-inbox"></i>Няма ученици в тази група.</td></tr>';
     attendanceBody.innerHTML = '<tr><td colspan="2" class="elite-empty"><i class="bi bi-inbox"></i>Няма ученици за присъствия.</td></tr>';
     return;
   }
@@ -274,14 +327,13 @@ async function loadStudents() {
   studentsBody.innerHTML = data
     .map((row) => {
       const deleteBtn = canManage()
-        ? `<button class="btn danger js-remove" data-id="${escapeHtml(row.id)}">Премахни</button>`
+        ? `<button class="btn btn-sm btn-outline-danger js-remove" data-id="${escapeHtml(row.id)}"><i class="bi bi-person-dash me-1"></i>Премахни</button>`
         : '-';
 
       return `
         <tr>
-          <td>${escapeHtml(row.id)}</td>
-          <td>${escapeHtml(row.student_id)}</td>
-          <td>${escapeHtml(new Date(row.enrolled_at).toLocaleString('bg-BG'))}</td>
+          <td class="fw-semibold"><i class="bi bi-person-circle me-1 text-secondary"></i>${escapeHtml(studentLabel(row.student_id))}</td>
+          <td class="text-nowrap">${escapeHtml(new Date(row.enrolled_at).toLocaleString('bg-BG'))}</td>
           <td>${deleteBtn}</td>
         </tr>
       `;
@@ -327,9 +379,9 @@ addForm?.addEventListener('submit', async (e) => {
     return;
   }
 
-  const studentId = document.getElementById('student-id').value.trim();
+  const studentId = addStudentSelect.value.trim();
   if (!studentId) {
-    showMessage('Въведи student UUID.');
+    showMessage('Избери ученик от списъка.');
     return;
   }
 
@@ -478,9 +530,9 @@ async function loadAttendanceForSelectedLesson() {
       const status = byStudent.get(row.student_id) || 'present';
       return `
         <tr>
-          <td>${escapeHtml(row.student_id)}</td>
+          <td class="fw-semibold">${escapeHtml(studentLabel(row.student_id))}</td>
           <td>
-            <select class="js-att-status" data-student-id="${escapeHtml(row.student_id)}">
+            <select class="form-select form-select-sm js-att-status" data-student-id="${escapeHtml(row.student_id)}">
               <option value="present" ${status === 'present' ? 'selected' : ''}>Присъства</option>
               <option value="late" ${status === 'late' ? 'selected' : ''}>Закъснял</option>
               <option value="absent" ${status === 'absent' ? 'selected' : ''}>Отсъства</option>
@@ -560,7 +612,7 @@ async function loadGrades() {
     .map((g) => `
       <tr>
         <td>${escapeHtml(g.graded_on)}</td>
-        <td>${escapeHtml(g.student_id)}</td>
+        <td>${escapeHtml(studentLabel(g.student_id))}</td>
         <td>${escapeHtml(g.title)}</td>
         <td>${escapeHtml(g.grade_value)} - ${escapeHtml(gradeLabel(g.grade_value))}</td>
       </tr>
@@ -602,7 +654,7 @@ async function loadRemarks() {
       return `
         <tr>
           <td class="text-nowrap">${escapeHtml(new Date(r.created_at).toLocaleString('bg-BG'))}</td>
-          <td>${escapeHtml(r.student_id)}</td>
+          <td>${escapeHtml(studentLabel(r.student_id))}</td>
           <td>${remarkTypeBadge(r.type)}</td>
           <td>${escapeHtml(r.note)}</td>
           <td>${deleteBtn}</td>
@@ -816,7 +868,7 @@ async function loadHomeworkSubmissionsForManagers() {
       return `
         <tr>
           <td>${escapeHtml(row.homeworks?.title ?? '-')}</td>
-          <td>${escapeHtml(row.student_id)}</td>
+          <td>${escapeHtml(studentLabel(row.student_id))}</td>
           <td>${escapeHtml(row.status)}</td>
           <td>${formatDateTimeBg(row.submitted_at)}</td>
           <td>${fileCell}</td>
