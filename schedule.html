@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="bg">
   <head>
     <meta charset="UTF-8" />
@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="elite-ui.css" />
-    <title>Elite Class - Групи</title>
+    <title>Elite Class - Разписание</title>
   </head>
   <body class="elite-bg">
     <nav class="navbar navbar-expand-lg elite-appbar">
@@ -22,9 +22,9 @@
         <div class="collapse navbar-collapse" id="eliteNav">
           <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
             <li class="nav-item"><a class="nav-link" href="dashboard.html">Табло</a></li>
-            <li class="nav-item"><a class="nav-link active" href="groups.html">Групи</a></li>
+            <li class="nav-item"><a class="nav-link" href="groups.html">Групи</a></li>
             <li class="nav-item"><a class="nav-link" href="calendar.html">Календар</a></li>
-            <li class="nav-item"><a class="nav-link" href="schedule.html">Разписание</a></li>
+            <li class="nav-item"><a class="nav-link active" href="schedule.html">Разписание</a></li>
             <li class="nav-item"><button class="btn btn-sm btn-outline-light" id="nav-logout-btn">Изход</button></li>
           </ul>
         </div>
@@ -34,23 +34,23 @@
       <section class="card elite-card">
         <div class="card-body p-4">
           <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
-            <h1 class="h4 mb-0"><i class="bi bi-people me-2"></i>Групи</h1>
+            <h1 class="h4 mb-0"><i class="bi bi-calendar-week me-2"></i>Седмично разписание</h1>
             <div class="d-flex gap-2">
               <a class="btn btn-outline-primary" href="dashboard.html">Назад</a>
               <button class="btn btn-outline-secondary" id="logout-btn">Изход</button>
             </div>
           </div>
 
-          <p class="elite-muted mt-3 mb-3">Списък на групите и създаване на нова група (само учител/админ).</p>
+          <p class="elite-muted mt-3 mb-3">Повтарящи се часове по дни от седмицата. Създаване само за учител/админ.</p>
 
           <div class="row g-3 mb-3">
             <div class="col-12 col-sm-6 col-lg-3">
               <div class="elite-kpi elite-kpi-colored elite-kpi-blue">
                 <div class="d-flex justify-content-between align-items-center">
-                  <div class="elite-kpi-title">Видими групи</div>
-                  <i class="bi bi-collection elite-kpi-icon"></i>
+                  <div class="elite-kpi-title">Часове в разписанието</div>
+                  <i class="bi bi-clock-history elite-kpi-icon"></i>
                 </div>
-                <div class="elite-kpi-value" id="kpi-groups-visible">...</div>
+                <div class="elite-kpi-value" id="kpi-slots-total">...</div>
               </div>
             </div>
             <div class="col-12 col-sm-6 col-lg-3">
@@ -59,7 +59,7 @@
                   <div class="elite-kpi-title">Роля</div>
                   <i class="bi bi-person-badge elite-kpi-icon"></i>
                 </div>
-                <div class="elite-kpi-value" id="kpi-groups-role">...</div>
+                <div class="elite-kpi-value" id="kpi-role">...</div>
               </div>
             </div>
             <div class="col-12 col-sm-6 col-lg-3">
@@ -68,32 +68,16 @@
                   <div class="elite-kpi-title">Създаване</div>
                   <i class="bi bi-shield-check elite-kpi-icon"></i>
                 </div>
-                <div class="elite-kpi-value" id="kpi-groups-create">...</div>
+                <div class="elite-kpi-value" id="kpi-create">...</div>
               </div>
             </div>
             <div class="col-12 col-sm-6 col-lg-3">
               <div class="elite-kpi elite-kpi-colored elite-kpi-purple">
                 <div class="d-flex justify-content-between align-items-center">
-                  <div class="elite-kpi-title">Навигация</div>
-                  <i class="bi bi-compass elite-kpi-icon"></i>
+                  <div class="elite-kpi-title">Филтър</div>
+                  <i class="bi bi-funnel elite-kpi-icon"></i>
                 </div>
-                <div class="elite-kpi-value">Активна</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card border-0 bg-light mb-3">
-            <div class="card-body">
-              <h2 class="h6 mb-3"><i class="bi bi-lightning-charge me-2"></i>Бързи действия</h2>
-              <div class="elite-quick-grid">
-                <a class="elite-quick-card" href="dashboard.html">
-                  <div class="elite-quick-title"><i class="bi bi-grid me-1"></i>Към dashboard</div>
-                  <div class="elite-quick-text">Общ преглед на ключовите метрики.</div>
-                </a>
-                <a class="elite-quick-card" href="calendar.html">
-                  <div class="elite-quick-title"><i class="bi bi-calendar-event me-1"></i>Към календар</div>
-                  <div class="elite-quick-text">Събития и планиране по групи.</div>
-                </a>
+                <div class="elite-kpi-value" id="kpi-filter">Всички групи</div>
               </div>
             </div>
           </div>
@@ -101,23 +85,39 @@
           <section id="create-section" class="hidden">
             <div class="card border-0 bg-light mb-3">
               <div class="card-body">
-                <h2 class="h6">Нова група</h2>
-                <form id="create-group-form">
+                <h2 class="h6 mb-3"><i class="bi bi-plus-circle me-2"></i>Нов час в разписанието</h2>
+                <form id="create-slot-form">
                   <div class="row g-2 align-items-end">
                     <div class="col-12 col-md-4">
-                      <label class="form-label" for="group-name">Име</label>
-                      <input id="group-name" class="form-control" placeholder="A1 Morning" required />
+                      <label class="form-label" for="slot-group">Група</label>
+                      <select id="slot-group" class="form-select" required></select>
                     </div>
-                    <div class="col-12 col-md-3">
-                      <label class="form-label" for="group-language">Език</label>
-                      <input id="group-language" class="form-control" placeholder="English" required />
+                    <div class="col-6 col-md-2">
+                      <label class="form-label" for="slot-day">Ден</label>
+                      <select id="slot-day" class="form-select" required>
+                        <option value="1">Понеделник</option>
+                        <option value="2">Вторник</option>
+                        <option value="3">Сряда</option>
+                        <option value="4">Четвъртък</option>
+                        <option value="5">Петък</option>
+                        <option value="6">Събота</option>
+                        <option value="7">Неделя</option>
+                      </select>
                     </div>
-                    <div class="col-12 col-md-3">
-                      <label class="form-label" for="group-level">Ниво</label>
-                      <input id="group-level" class="form-control" placeholder="A1" required />
+                    <div class="col-6 col-md-2">
+                      <label class="form-label" for="slot-start">Начало</label>
+                      <input id="slot-start" type="time" class="form-control" required />
                     </div>
-                    <div class="col-12 col-md-2 d-grid">
-                      <button class="btn btn-primary" type="submit">Добави</button>
+                    <div class="col-6 col-md-2">
+                      <label class="form-label" for="slot-end">Край</label>
+                      <input id="slot-end" type="time" class="form-control" required />
+                    </div>
+                    <div class="col-6 col-md-2">
+                      <label class="form-label" for="slot-room">Зала</label>
+                      <input id="slot-room" class="form-control" placeholder="напр. 204" />
+                    </div>
+                    <div class="col-12 d-grid d-md-block">
+                      <button class="btn btn-primary" type="submit">Добави час</button>
                     </div>
                   </div>
                 </form>
@@ -125,42 +125,28 @@
             </div>
           </section>
 
+          <div class="d-flex flex-column flex-sm-row align-items-sm-end gap-2 mb-3">
+            <div class="flex-grow-1">
+              <label class="form-label" for="filter-group">Филтър по група</label>
+              <select id="filter-group" class="form-select">
+                <option value="">Всички групи</option>
+              </select>
+            </div>
+          </div>
+
           <p class="msg text-danger small mb-3" id="msg"></p>
 
-          <div class="table-responsive">
-            <table class="table table-striped table-hover align-middle mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th><i class="bi bi-tag me-1"></i>Име</th>
-                  <th><i class="bi bi-translate me-1"></i>Език</th>
-                  <th><i class="bi bi-layers me-1"></i>Ниво</th>
-                  <th><i class="bi bi-person-badge me-1"></i>Преподавател ID</th>
-                  <th><i class="bi bi-box-arrow-up-right me-1"></i>Детайли</th>
-                </tr>
-              </thead>
-              <tbody id="groups-body"></tbody>
-            </table>
-          </div>
+          <div id="schedule-body"></div>
         </div>
       </section>
     </main>
     <footer class="elite-footer py-4">
       <div class="container">
-        <p class="small mb-0">Elite Class eDiary • Управление на групи и академични данни</p>
+        <p class="small mb-0">Elite Class eDiary • Седмично разписание по групи</p>
       </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script type="module" src="./src/groups/groups.js"></script>
+    <script type="module" src="./src/schedule/schedule.js"></script>
   </body>
 </html>
-
-
-
-
-
-
-
-
-
-
