@@ -99,14 +99,20 @@ Supabase Storage buckets:
 
 ## 7) SQL Migration Scripts (committed in repo)
 
-Run in Supabase SQL Editor:
-1. `supabase/access_and_calendar.sql`
-2. `supabase/storage_homework_files.sql`
-3. `supabase/parent_invites.sql`
-4. `supabase/profile_fields.sql`
-5. `supabase/storage_profile_avatars.sql`
-6. `supabase/admin_user_tools.sql`
-7. `supabase/demo_seed_role_data.sql` (optional demo data)
+Run in Supabase SQL Editor **in this order** (each file top to bottom):
+1. `supabase/schema.sql` — enums, base tables (profiles, groups, lessons, attendance, grades, homeworks, homework_submissions…), RLS helpers and policies
+2. `supabase/profile_fields.sql` — teacher_title/address check constraint
+3. `supabase/access_and_calendar.sql` — parent_students + school_events + RLS
+4. `supabase/parent_invites.sql` — parent_student_invites + claim RPC
+5. `supabase/admin_user_tools.sql` — admin_list_users RPC
+6. `supabase/storage_homework_files.sql` — homework-files bucket + policies
+7. `supabase/storage_profile_avatars.sql` — profile-avatars bucket + policies
+8. `supabase/demo_seed_role_data.sql` (optional demo data)
+
+> `schema.sql` was reconstructed from the application code to make the database
+> reproducible from scratch. On the existing production project it is a safe
+> no-op (`create ... if not exists`); the authoritative schema still lives in
+> the live Supabase project.
 
 ## 8) Local Development Setup
 
