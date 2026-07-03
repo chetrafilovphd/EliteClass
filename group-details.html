@@ -256,6 +256,46 @@
             </table>
           </div>
 
+          <h2 class="h5 mt-4">Забележки и похвали</h2>
+          <section id="remarks-manage-section" class="hidden mb-3">
+            <form id="create-remark-form">
+              <div class="row g-2 align-items-end">
+                <div class="col-12 col-md-3">
+                  <label class="form-label" for="remark-student-id">Ученик</label>
+                  <select id="remark-student-id" class="form-select" required></select>
+                </div>
+                <div class="col-12 col-md-2">
+                  <label class="form-label" for="remark-type">Тип</label>
+                  <select id="remark-type" class="form-select" required>
+                    <option value="praise">Похвала</option>
+                    <option value="remark">Забележка</option>
+                  </select>
+                </div>
+                <div class="col-12 col-md-5">
+                  <label class="form-label" for="remark-note">Текст</label>
+                  <input id="remark-note" class="form-control" placeholder="напр. Отлична работа по проекта" required />
+                </div>
+                <div class="col-12 col-md-2 d-grid">
+                  <button class="btn btn-primary" type="submit">Добави</button>
+                </div>
+              </div>
+            </form>
+          </section>
+          <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th><i class="bi bi-calendar2-week me-1"></i>Дата</th>
+                  <th><i class="bi bi-person-vcard me-1"></i>Ученик</th>
+                  <th><i class="bi bi-tag me-1"></i>Тип</th>
+                  <th><i class="bi bi-chat-left-text me-1"></i>Текст</th>
+                  <th><i class="bi bi-lightning-charge me-1"></i>Действие</th>
+                </tr>
+              </thead>
+              <tbody id="remarks-body"></tbody>
+            </table>
+          </div>
+
           <h2 class="h5 mt-4">Домашни работи</h2>
           <section id="homeworks-manage-section" class="hidden mb-3">
             <form id="create-homework-form">
