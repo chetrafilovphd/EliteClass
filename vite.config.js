@@ -19,6 +19,7 @@ export default defineConfig({
         groups: fromRoot('./groups.html'),
         groupDetails: fromRoot('./group-details.html'),
         calendar: fromRoot('./calendar.html'),
+        schedule: fromRoot('./schedule.html'),
         parentLinks: fromRoot('./parent-links.html'),
       },
     },
