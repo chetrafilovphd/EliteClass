@@ -28,6 +28,12 @@ const createHomeworkForm = document.getElementById('create-homework-form');
 const homeworksBody = document.getElementById('homeworks-body');
 const submissionsSection = document.getElementById('submissions-section');
 const submissionsBody = document.getElementById('submissions-body');
+const remarksManageSection = document.getElementById('remarks-manage-section');
+const createRemarkForm = document.getElementById('create-remark-form');
+const remarkStudentSelect = document.getElementById('remark-student-id');
+const remarkTypeSelect = document.getElementById('remark-type');
+const remarkNoteInput = document.getElementById('remark-note');
+const remarksBody = document.getElementById('remarks-body');
 const kpiStudentsEl = document.getElementById('kpi-gd-students');
 const kpiLessonsEl = document.getElementById('kpi-gd-lessons');
 const kpiGradesEl = document.getElementById('kpi-gd-grades');
@@ -204,6 +210,7 @@ async function requireAuth() {
     gradesManageSection.classList.remove('hidden');
     homeworksManageSection.classList.remove('hidden');
     submissionsSection.classList.remove('hidden');
+    remarksManageSection.classList.remove('hidden');
   }
 
   return true;
@@ -232,16 +239,14 @@ async function loadGroup() {
 }
 
 function renderStudentSelectOptions() {
-  if (!gradeStudentSelect) return;
+  const optionsHtml = groupStudents.length
+    ? groupStudents
+        .map((row) => `<option value="${escapeHtml(row.student_id)}">${escapeHtml(row.student_id)}</option>`)
+        .join('')
+    : '<option value="">Няма ученици</option>';
 
-  if (!groupStudents.length) {
-    gradeStudentSelect.innerHTML = '<option value="">Няма ученици</option>';
-    return;
-  }
-
-  gradeStudentSelect.innerHTML = groupStudents
-    .map((row) => `<option value="${escapeHtml(row.student_id)}">${escapeHtml(row.student_id)}</option>`)
-    .join('');
+  if (gradeStudentSelect) gradeStudentSelect.innerHTML = optionsHtml;
+  if (remarkStudentSelect) remarkStudentSelect.innerHTML = optionsHtml;
 }
 
 async function loadStudents() {
@@ -562,6 +567,103 @@ async function loadGrades() {
     `)
     .join('');
 }
+
+function remarkTypeBadge(type) {
+  if (type === 'praise') {
+    return '<span class="badge text-bg-success"><i class="bi bi-emoji-smile me-1"></i>Похвала</span>';
+  }
+  return '<span class="badge text-bg-warning"><i class="bi bi-exclamation-triangle me-1"></i>Забележка</span>';
+}
+
+async function loadRemarks() {
+  if (!remarksBody) return;
+
+  const { data, error } = await supabase
+    .from('remarks')
+    .select('id, student_id, type, note, created_at')
+    .eq('group_id', groupId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    remarksBody.innerHTML = `<tr><td colspan="5" class="elite-empty"><i class="bi bi-exclamation-triangle"></i>Грешка при зареждане: ${escapeHtml(error.message)}</td></tr>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    remarksBody.innerHTML = '<tr><td colspan="5" class="elite-empty"><i class="bi bi-inbox"></i>Няма забележки или похвали за тази група.</td></tr>';
+    return;
+  }
+
+  remarksBody.innerHTML = data
+    .map((r) => {
+      const deleteBtn = canManage()
+        ? `<button class="btn btn-sm btn-outline-danger js-del-remark" data-id="${escapeHtml(r.id)}" title="Изтрий"><i class="bi bi-trash"></i></button>`
+        : '-';
+      return `
+        <tr>
+          <td class="text-nowrap">${escapeHtml(new Date(r.created_at).toLocaleString('bg-BG'))}</td>
+          <td>${escapeHtml(r.student_id)}</td>
+          <td>${remarkTypeBadge(r.type)}</td>
+          <td>${escapeHtml(r.note)}</td>
+          <td>${deleteBtn}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  remarksBody.querySelectorAll('.js-del-remark').forEach((btn) => {
+    btn.addEventListener('click', () => deleteRemark(btn.getAttribute('data-id')));
+  });
+}
+
+async function deleteRemark(id) {
+  if (!id || !canManage()) return;
+  showMessage('Изтриваме...');
+  const { error } = await supabase.from('remarks').delete().eq('id', id);
+  if (error) {
+    showMessage(`Грешка при изтриване: ${error.message}`);
+    return;
+  }
+  showMessage('Записът е изтрит.');
+  await loadRemarks();
+}
+
+createRemarkForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  if (!canManage()) {
+    showMessage('Нямаш права за това действие.');
+    return;
+  }
+
+  const studentId = remarkStudentSelect.value;
+  const type = remarkTypeSelect.value;
+  const note = remarkNoteInput.value.trim();
+
+  if (!studentId || !type || note.length < 2) {
+    showMessage('Избери ученик, тип и въведи текст (мин. 2 символа).');
+    return;
+  }
+
+  showMessage('Записваме...');
+
+  const { error } = await supabase.from('remarks').insert({
+    group_id: groupId,
+    student_id: studentId,
+    type,
+    note,
+    created_by: currentUser.id,
+  });
+
+  if (error) {
+    showMessage(`Грешка при запис: ${error.message}`);
+    return;
+  }
+
+  createRemarkForm.reset();
+  showMessage('Записът е добавен.');
+  await loadRemarks();
+});
 
 async function loadHomeworks() {
   const { data, error } = await supabase
@@ -884,6 +986,7 @@ navLogoutBtn?.addEventListener('click', logout);
   await loadStudents();
   await loadLessons();
   await loadGrades();
+  await loadRemarks();
   await loadHomeworks();
   await loadHomeworkSubmissionsForManagers();
 })();
