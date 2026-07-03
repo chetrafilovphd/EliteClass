@@ -24,6 +24,7 @@
             <li class="nav-item"><a class="nav-link" href="dashboard.html">Табло</a></li>
             <li class="nav-item"><a class="nav-link active" href="groups.html">Групи</a></li>
             <li class="nav-item"><a class="nav-link" href="calendar.html">Календар</a></li>
+            <li class="nav-item"><a class="nav-link" href="schedule.html">Разписание</a></li>
             <li class="nav-item"><button class="btn btn-sm btn-outline-light" id="nav-logout-btn">Изход</button></li>
           </ul>
         </div>
@@ -107,15 +108,15 @@
             <div class="card border-0 bg-light">
               <div class="card-body">
                 <h2 class="h6">Добави ученик към група</h2>
-                <p class="elite-muted small mb-2">Въведи `student UUID` от таблица `profiles` (роля `student`).</p>
+                <p class="elite-muted small mb-2">Избери ученик от списъка (показват се само ученици, които още не са в групата).</p>
                 <form id="add-student-form">
                   <div class="row g-2 align-items-end">
                     <div class="col-12 col-md-9">
-                      <label class="form-label" for="student-id">Student UUID</label>
-                      <input id="student-id" class="form-control" placeholder="student UUID" required />
+                      <label class="form-label" for="student-id">Ученик</label>
+                      <select id="student-id" class="form-select" required></select>
                     </div>
                     <div class="col-12 col-md-3 d-grid">
-                      <button class="btn btn-primary" type="submit">Добави</button>
+                      <button class="btn btn-primary" type="submit"><i class="bi bi-person-plus me-1"></i>Добави</button>
                     </div>
                   </div>
                 </form>
@@ -130,9 +131,8 @@
             <table class="table table-striped table-hover align-middle">
               <thead class="table-light">
                 <tr>
-                  <th><i class="bi bi-hash me-1"></i>Запис ID</th>
-                  <th><i class="bi bi-person-vcard me-1"></i>Student ID</th>
-                  <th><i class="bi bi-calendar2-event me-1"></i>Дата на записване</th>
+                  <th><i class="bi bi-person-circle me-1"></i>Ученик</th>
+                  <th><i class="bi bi-calendar2-event me-1"></i>Записан на</th>
                   <th><i class="bi bi-lightning-charge me-1"></i>Действие</th>
                 </tr>
               </thead>
@@ -190,7 +190,7 @@
               <table class="table table-striped table-hover align-middle">
                 <thead class="table-light">
                   <tr>
-                    <th><i class="bi bi-person-vcard me-1"></i>Student ID</th>
+                    <th><i class="bi bi-person-circle me-1"></i>Ученик</th>
                     <th><i class="bi bi-check2-square me-1"></i>Статус</th>
                   </tr>
                 </thead>
