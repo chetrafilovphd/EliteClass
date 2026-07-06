@@ -61,7 +61,12 @@
 
           <div class="card border-0 bg-light mt-3">
             <div class="card-body">
-              <h2 class="h6 mb-3"><i class="bi bi-person-lines-fill me-2"></i>Моят профил</h2>
+              <button class="btn btn-link p-0 text-decoration-none d-flex align-items-center gap-2 w-100 text-start collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#profile-collapse" aria-expanded="false" aria-controls="profile-collapse">
+                <i class="bi bi-person-lines-fill"></i>
+                <span class="h6 mb-0">Моят профил</span>
+                <i class="bi bi-chevron-down ms-auto"></i>
+              </button>
+              <div class="collapse mt-3" id="profile-collapse">
               <form id="profile-form" class="vstack gap-3">
                 <div class="row g-2">
                   <div class="col-12 col-md-4">
@@ -116,6 +121,7 @@
                 </div>
               </div>
               <p id="profile-msg" class="small mb-0 mt-2 text-danger"></p>
+              </div>
             </div>
           </div>
 
@@ -333,7 +339,7 @@
       <div class="container">
         <div class="row g-3 align-items-center">
           <div class="col-12 col-md-7 small">Работно време на администрация: Пон-Пет, 09:00 - 18:00</div>
-          <div class="col-12 col-md-5 text-md-end small">Поддръжка: office@elitelingua.bg • +359 700 12 345</div>
+          <div class="col-12 col-md-5 text-md-end small">Поддръжка: <a href="tel:+359883641940">0883 641 940</a> • <a href="https://elitelingua.com/" target="_blank" rel="noopener noreferrer">elitelingua.com</a></div>
         </div>
       </div>
     </footer>

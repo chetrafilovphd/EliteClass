@@ -519,3 +519,67 @@ h6,
     font-size: 1rem;
   }
 }
+
+/* ============================================================
+   UX polish pass
+   ============================================================ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Keep navigation reachable on long pages (e.g. group details). */
+.elite-appbar {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+}
+
+/* Visible keyboard focus for accessibility. */
+a:focus-visible,
+button:focus-visible,
+.btn:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible,
+.nav-link:focus-visible,
+.elite-quick-card:focus-visible {
+  outline: 3px solid var(--elite-gold);
+  outline-offset: 2px;
+  border-radius: 0.4rem;
+}
+
+/* Turn loose feedback text into a clear, noticeable callout. */
+.msg:not(:empty) {
+  display: block;
+  margin-top: 0.25rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 0.6rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--elite-gold);
+}
+
+/* Smooth momentum scrolling + a subtle hint that tables scroll on mobile. */
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* Softer loading/placeholder cells. */
+tbody td[colspan] {
+  color: #94a3b8;
+}
+
+/* Rotate the chevron on collapsible section toggles. */
+[data-bs-toggle="collapse"] .bi-chevron-down {
+  transition: transform 0.2s ease;
+}
+[data-bs-toggle="collapse"]:not(.collapsed) .bi-chevron-down {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
