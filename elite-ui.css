@@ -632,3 +632,33 @@ main a:not(.btn):not(.nav-link):not(.navbar-brand):not(.elite-quick-card) {
 main a:not(.btn):not(.nav-link):not(.navbar-brand):not(.elite-quick-card):hover {
   color: var(--elite-navy);
 }
+
+/* Landing hero accent: soft gold glow, light gradient, thin gold top bar. */
+.elite-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(620px 260px at 50% -20%, rgba(212, 175, 55, 0.14), transparent 70%),
+    linear-gradient(180deg, #ffffff 0%, #f6f9fd 100%);
+}
+
+.elite-hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--elite-gold), #f0d883, var(--elite-gold));
+}
+
+.elite-trust {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.elite-trust .elite-chip i {
+  color: var(--elite-gold);
+}
