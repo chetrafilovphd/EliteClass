@@ -107,9 +107,13 @@ Run in Supabase SQL Editor **in this order** (each file top to bottom):
 5. `supabase/admin_user_tools.sql` — admin_list_users RPC
 6. `supabase/storage_homework_files.sql` — homework-files bucket + policies
 7. `supabase/storage_profile_avatars.sql` — profile-avatars bucket + policies
-8. `supabase/schedule.sql` — weekly `schedule_slots` per group + RLS
-9. `supabase/remarks.sql` — teacher remarks/praise (`remarks`) with history + RLS
-10. `supabase/demo_seed_role_data.sql` (optional demo data)
+8. `supabase/homework_materials.sql` — teacher homework material files (`homework-materials` public bucket) + `homeworks.material_*` columns
+9. `supabase/schedule.sql` — weekly `schedule_slots` per group + RLS
+10. `supabase/remarks.sql` — teacher remarks/praise (`remarks`) with history + RLS
+11. `supabase/demo_seed_role_data.sql` (optional demo data)
+
+> Or just run the single consolidated file `supabase/_setup_all.sql` (all of
+> the above except the optional demo seed, concatenated in order).
 
 > `schema.sql` was reconstructed from the application code to make the database
 > reproducible from scratch. On the existing production project it is a safe

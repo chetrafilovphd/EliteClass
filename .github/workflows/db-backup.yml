@@ -1,0 +1,50 @@
+name: Weekly DB backup
+
+# Free-tier stopgap for Supabase's paid daily backups. Dumps the database and
+# uploads it as an ENCRYPTED workflow artifact (the repo is public, the data is
+# not — never commit or upload an unencrypted dump here).
+#
+# Requires two repository secrets (Settings -> Secrets and variables -> Actions):
+#   SUPABASE_DB_URL   Connection string URI from Supabase:
+#                     Project Settings -> Database -> Connection string (URI).
+#                     Use the "Session pooler" URI; it includes the password.
+#   BACKUP_PASSPHRASE Any strong passphrase; keep it safe — you need it to
+#                     decrypt:  gpg -d backup-XXXX.sql.gpg > backup.sql
+#
+# Note: a PAUSED Supabase project cannot be dumped — resume it first (free-tier
+# projects auto-pause after ~7 days of inactivity).
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'   # every Monday 03:00 UTC
+  workflow_dispatch: {}    # allow manual runs from the Actions tab
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+
+      - name: Dump and encrypt
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          ts="$(date -u +%Y%m%d-%H%M%S)"
+          pg_dump "$DB_URL" --no-owner --no-privileges > "backup-$ts.sql"
+          gpg --batch --yes --passphrase "$PASSPHRASE" --cipher-algo AES256 -c "backup-$ts.sql"
+          rm -f "backup-$ts.sql"
+          ls -lh backup-*.sql.gpg
+
+      - name: Upload encrypted backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup
+          path: 'backup-*.sql.gpg'
+          retention-days: 30

@@ -231,7 +231,6 @@ async function requireAuth() {
     attendanceManageSection.classList.remove('hidden');
     gradesManageSection.classList.remove('hidden');
     homeworksManageSection.classList.remove('hidden');
-    submissionsSection.classList.remove('hidden');
     remarksManageSection.classList.remove('hidden');
   }
 
@@ -720,7 +719,7 @@ createRemarkForm?.addEventListener('submit', async (e) => {
 async function loadHomeworks() {
   const { data, error } = await supabase
     .from('homeworks')
-    .select('id, title, description, due_date')
+    .select('id, title, description, due_date, material_path, material_name')
     .eq('group_id', groupId)
     .order('due_date', { ascending: true, nullsFirst: false });
 
@@ -731,89 +730,34 @@ async function loadHomeworks() {
   }
 
   if (!data || data.length === 0) {
-    homeworksBody.innerHTML = '<tr><td colspan="5" class="elite-empty"><i class="bi bi-inbox"></i>Няма домашни работи за тази група.</td></tr>';
+    homeworksBody.innerHTML = '<tr><td colspan="4" class="elite-empty"><i class="bi bi-inbox"></i>Няма домашни работи за тази група.</td></tr>';
     setKpiText(kpiHomeworksEl, '0');
     return;
   }
 
   setKpiText(kpiHomeworksEl, String(data.length));
 
-  const homeworkIds = data.map((h) => h.id);
-  let submissionsByHomework = new Map();
-  let fileUrlByPath = new Map();
-
-  if (canSubmitHomework() && homeworkIds.length > 0) {
-    const { data: submissions, error: submissionsError } = await supabase
-      .from('homework_submissions')
-      .select('id, homework_id, status, file_path, submitted_at')
-      .eq('student_id', currentUser.id)
-      .in('homework_id', homeworkIds);
-
-    if (submissionsError) {
-      showMessage(`Грешка при зареждане на предадени домашни: ${submissionsError.message}`);
-      return;
-    }
-
-    submissionsByHomework = new Map((submissions || []).map((s) => [s.homework_id, s]));
-
-    const filePaths = [...new Set((submissions || []).map((s) => s.file_path).filter(Boolean))];
-    await Promise.all(
-      filePaths.map(async (path) => {
-        const { data: signed, error: signError } = await supabase.storage
-          .from('homework-files')
-          .createSignedUrl(path, 60 * 60);
-
-        if (!signError && signed?.signedUrl) {
-          fileUrlByPath.set(path, signed.signedUrl);
-        }
-      })
-    );
-  }
-
   homeworksBody.innerHTML = data
     .map((h) => {
-      const submission = submissionsByHomework.get(h.id);
-      const filePath = submission?.file_path || null;
-      const fileUrl = filePath ? fileUrlByPath.get(filePath) : null;
-
-      let fileCell = '-';
-      if (fileUrl) {
-        fileCell = `<a class="btn" href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener noreferrer">Свали</a>`;
-      } else if (submission?.submitted_at) {
-        fileCell = `Предадено: ${formatDateTimeBg(submission.submitted_at)}`;
+      let materialCell = '<span class="elite-muted">—</span>';
+      if (h.material_path) {
+        // Public bucket -> synchronous public URL (no egress to sign; CDN-cached).
+        const { data: pub } = supabase.storage.from('homework-materials').getPublicUrl(h.material_path);
+        if (pub?.publicUrl) {
+          const label = h.material_name || 'Свали';
+          materialCell = `<a class="btn btn-sm btn-outline-primary" href="${escapeHtml(pub.publicUrl)}" target="_blank" rel="noopener noreferrer"><i class="bi bi-download me-1"></i>${escapeHtml(label)}</a>`;
+        }
       }
-
-      let actionCell = '-';
-      if (canSubmitHomework()) {
-        actionCell = `
-          <input type="file" class="js-homework-file" data-homework-id="${escapeHtml(h.id)}" />
-          <button class="btn js-homework-upload" data-homework-id="${escapeHtml(h.id)}" type="button">Качи</button>
-        `;
-      }
-
       return `
         <tr>
           <td>${escapeHtml(h.due_date ?? '-')}</td>
           <td>${escapeHtml(h.title)}</td>
           <td>${escapeHtml(h.description ?? '-')}</td>
-          <td>${fileCell}</td>
-          <td>${actionCell}</td>
+          <td>${materialCell}</td>
         </tr>
       `;
     })
     .join('');
-
-  if (canSubmitHomework()) {
-    homeworksBody.querySelectorAll('.js-homework-upload').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const homeworkId = btn.getAttribute('data-homework-id');
-        const input = Array.from(homeworksBody.querySelectorAll('.js-homework-file'))
-          .find((el) => el.getAttribute('data-homework-id') === homeworkId);
-        const file = input?.files?.[0];
-        await uploadHomeworkFile(homeworkId, file);
-      });
-    });
-  }
 }
 
 async function loadHomeworkSubmissionsForManagers() {
@@ -988,25 +932,58 @@ createHomeworkForm?.addEventListener('submit', async (e) => {
   const title = document.getElementById('homework-title').value.trim();
   const description = document.getElementById('homework-description').value.trim();
   const dueDate = document.getElementById('homework-due-date').value;
+  const materialFile = document.getElementById('homework-material')?.files?.[0] || null;
 
   if (!title) {
     showMessage('Въведи заглавие за домашното.');
     return;
   }
 
+  const maxSize = 10 * 1024 * 1024;
+  if (materialFile && materialFile.size > maxSize) {
+    showMessage('Файлът е твърде голям. Максимум 10MB.');
+    return;
+  }
+
   showMessage('Добавяме домашно...');
 
-  const { error } = await supabase.from('homeworks').insert({
-    group_id: groupId,
-    title,
-    description: description || null,
-    due_date: dueDate || null,
-    created_by: currentUser.id,
-  });
+  const { data: inserted, error } = await supabase
+    .from('homeworks')
+    .insert({
+      group_id: groupId,
+      title,
+      description: description || null,
+      due_date: dueDate || null,
+      created_by: currentUser.id,
+    })
+    .select('id')
+    .single();
 
   if (error) {
     showMessage(`Грешка при добавяне на домашно: ${error.message}`);
     return;
+  }
+
+  if (materialFile && inserted?.id) {
+    showMessage('Качваме материала...');
+    const cleanName = sanitizeFileName(materialFile.name);
+    const path = `${groupId}/${inserted.id}-${Date.now()}-${cleanName}`;
+
+    const { error: upErr } = await supabase.storage
+      .from('homework-materials')
+      .upload(path, materialFile, { upsert: true });
+
+    if (upErr) {
+      showMessage(`Домашното е добавено, но материалът не се качи: ${upErr.message}`);
+    } else {
+      const { error: updErr } = await supabase
+        .from('homeworks')
+        .update({ material_path: path, material_name: materialFile.name })
+        .eq('id', inserted.id);
+      if (updErr) {
+        showMessage(`Материалът е качен, но връзката не се запази: ${updErr.message}`);
+      }
+    }
   }
 
   createHomeworkForm.reset();
@@ -1040,7 +1017,6 @@ navLogoutBtn?.addEventListener('click', logout);
   await loadGrades();
   await loadRemarks();
   await loadHomeworks();
-  await loadHomeworkSubmissionsForManagers();
 })();
 
 

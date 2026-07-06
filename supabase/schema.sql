@@ -201,6 +201,8 @@ create table if not exists public.homeworks (
   title text not null,
   description text,
   due_date date,
+  material_path text,   -- optional teacher-uploaded material (homework-materials bucket)
+  material_name text,   -- original file name for display
   created_by uuid references public.profiles (id) on delete set null,
   created_at timestamptz not null default now()
 );
