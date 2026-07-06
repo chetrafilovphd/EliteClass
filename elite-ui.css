@@ -1,12 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Serif:wght@600;700&display=swap');
+/* Two typefaces only — Manrope for headings, Inter for body. Both ship full
+   Cyrillic, so Bulgarian renders correctly. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
 
 :root {
   --elite-navy: #0b1f3b;
   --elite-navy-2: #122a4f;
   --elite-gold: #d4af37;
   --elite-ink: #0f172a;
-  --elite-font-body: 'Noto Sans', 'Segoe UI', sans-serif;
-  --elite-font-heading: 'Noto Serif', Georgia, serif;
+  --elite-font-body: 'Inter', 'Segoe UI', Roboto, sans-serif;
+  --elite-font-heading: 'Manrope', 'Segoe UI', Roboto, sans-serif;
 }
 
 body.elite-bg {
@@ -19,6 +21,14 @@ body.elite-bg {
     radial-gradient(900px 500px at 95% 0%, #1c3d6f 0%, transparent 60%),
     linear-gradient(165deg, var(--elite-navy) 0%, var(--elite-navy-2) 34%, #f4f6fa 34%);
   color: var(--elite-ink);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(212, 175, 55, 0.3);
 }
 
 .elite-shell {
@@ -386,6 +396,9 @@ h6,
 .h5,
 .h6 {
   font-family: var(--elite-font-heading);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
 }
 
 .elite-footer a {
@@ -582,4 +595,40 @@ tbody td[colspan] {
   html {
     scroll-behavior: auto;
   }
+}
+
+/* Brand the default Bootstrap blue to the navy/gold theme for a cohesive look. */
+.btn-primary {
+  --bs-btn-bg: var(--elite-navy);
+  --bs-btn-border-color: var(--elite-navy);
+  --bs-btn-hover-bg: #15345f;
+  --bs-btn-hover-border-color: #15345f;
+  --bs-btn-active-bg: #0a1a33;
+  --bs-btn-active-border-color: #0a1a33;
+  --bs-btn-disabled-bg: var(--elite-navy);
+  --bs-btn-disabled-border-color: var(--elite-navy);
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--elite-navy);
+  --bs-btn-border-color: var(--elite-navy);
+  --bs-btn-hover-bg: var(--elite-navy);
+  --bs-btn-hover-border-color: var(--elite-navy);
+  --bs-btn-active-bg: var(--elite-navy);
+  --bs-btn-active-border-color: var(--elite-navy);
+}
+
+/* Branded focus ring on form fields (instead of Bootstrap's default blue). */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--elite-gold);
+  box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.22);
+}
+
+/* Links pick up the brand navy for consistency with buttons. */
+main a:not(.btn):not(.nav-link):not(.navbar-brand):not(.elite-quick-card) {
+  color: #15345f;
+}
+main a:not(.btn):not(.nav-link):not(.navbar-brand):not(.elite-quick-card):hover {
+  color: var(--elite-navy);
 }
