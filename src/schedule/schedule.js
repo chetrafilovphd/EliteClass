@@ -192,12 +192,15 @@ async function loadSlots() {
         const del = canManage()
           ? `<button class="btn btn-sm btn-outline-danger js-del-slot" data-id="${escapeHtml(slot.id)}" title="Изтрий"><i class="bi bi-trash"></i></button>`
           : '';
+        const openGroup = (currentRole === 'teacher' || currentRole === 'admin') && slot.group_id
+          ? `<a class="btn btn-sm btn-outline-primary" href="group-details.html?groupId=${encodeURIComponent(slot.group_id)}" title="Отвори групата — оценки, забележки, домашни"><i class="bi bi-box-arrow-up-right me-1"></i>Група</a>`
+          : '';
         return `
           <tr>
             <td class="fw-semibold text-nowrap">${escapeHtml(time)}</td>
             <td>${escapeHtml(slot.groups?.name || '-')}</td>
             <td>${room}</td>
-            <td class="text-end">${del}</td>
+            <td class="text-end"><div class="d-flex justify-content-end gap-1">${openGroup}${del}</div></td>
           </tr>`;
       })
       .join('');
