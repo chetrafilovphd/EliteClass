@@ -675,6 +675,21 @@ main a:not(.btn):not(.nav-link):not(.navbar-brand):not(.elite-quick-card):hover 
   font-weight: 700;
   font-size: 0.95rem;
 }
+/* Praise / remark "stickers". */
+.elite-sticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.elite-sticker-praise { background: #dcfce7; color: #166534; border-color: #86efac; }
+.elite-sticker-remark { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+
 .elite-grade-2 { background: #fee2e2; color: #b91c1c; }
 .elite-grade-3 { background: #ffedd5; color: #c2410c; }
 .elite-grade-4 { background: #fef9c3; color: #a16207; }

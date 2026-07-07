@@ -424,6 +424,85 @@ inviteFormEl?.addEventListener('submit', async (e) => {
   await loadInvites();
 });
 
+// --- Admin: create a login account via the admin-create-user Edge Function ---
+const createUserForm = document.getElementById('create-user-form');
+const cuMsgEl = document.getElementById('cu-msg');
+const cuGenerateBtn = document.getElementById('cu-generate');
+const cuPasswordEl = document.getElementById('cu-password');
+
+function randomPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const specials = '!@#$%*?';
+  const arr = new Uint32Array(10);
+  crypto.getRandomValues(arr);
+  let pwd = '';
+  for (let i = 0; i < 8; i += 1) pwd += chars[arr[i] % chars.length];
+  pwd += specials[arr[8] % specials.length];
+  pwd += String(arr[9] % 10);
+  return pwd;
+}
+
+function cuShow(text, ok = false) {
+  if (!cuMsgEl) return;
+  cuMsgEl.textContent = text;
+  cuMsgEl.className = `small mb-0 mt-2 ${ok ? 'text-success' : 'text-danger'}`;
+}
+
+function roleLabelBg(role) {
+  if (role === 'admin') return 'Админ';
+  if (role === 'teacher') return 'Учител';
+  if (role === 'student') return 'Ученик';
+  if (role === 'parent') return 'Родител';
+  return role;
+}
+
+cuGenerateBtn?.addEventListener('click', () => {
+  if (cuPasswordEl) cuPasswordEl.value = randomPassword();
+});
+
+createUserForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const full_name = document.getElementById('cu-full-name').value.trim();
+  const email = document.getElementById('cu-email').value.trim().toLowerCase();
+  const role = document.getElementById('cu-role').value;
+  const phone = document.getElementById('cu-phone').value.trim();
+  const address = document.getElementById('cu-address').value.trim();
+  let password = cuPasswordEl.value;
+
+  if (!email) {
+    cuShow('Въведи имейл.');
+    return;
+  }
+  if (!password) {
+    password = randomPassword();
+    cuPasswordEl.value = password;
+  }
+  if (password.length < 8) {
+    cuShow('Паролата трябва да е поне 8 символа.');
+    return;
+  }
+
+  cuShow('Създаваме акаунта…');
+
+  const { data, error } = await supabase.functions.invoke('admin-create-user', {
+    body: { full_name, email, role, phone, address, password },
+  });
+
+  if (error || !data?.ok) {
+    cuShow(`Грешка: ${data?.error || error?.message || 'неуспешно създаване'}`);
+    return;
+  }
+
+  cuShow(`✅ Акаунтът е създаден: ${email} (${roleLabelBg(role)}). Временна парола: ${password} — дай я на потребителя.`, true);
+  document.getElementById('cu-full-name').value = '';
+  document.getElementById('cu-email').value = '';
+  document.getElementById('cu-phone').value = '';
+  document.getElementById('cu-address').value = '';
+  cuPasswordEl.value = '';
+  await loadUsers();
+});
+
 async function logout() {
   await supabase.auth.signOut();
   window.location.href = 'login.html';

@@ -517,9 +517,9 @@ async function loadGrades() {
 
 function remarkTypeBadge(type) {
   if (type === 'praise') {
-    return '<span class="badge text-bg-success"><i class="bi bi-emoji-smile me-1"></i>Похвала</span>';
+    return '<span class="elite-sticker elite-sticker-praise"><i class="bi bi-emoji-smile-fill"></i>Похвала</span>';
   }
-  return '<span class="badge text-bg-warning"><i class="bi bi-exclamation-triangle me-1"></i>Забележка</span>';
+  return '<span class="elite-sticker elite-sticker-remark"><i class="bi bi-exclamation-triangle-fill"></i>Забележка</span>';
 }
 
 async function loadRemarks() {

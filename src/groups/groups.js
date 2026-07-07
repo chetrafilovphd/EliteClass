@@ -4,6 +4,8 @@ const msgEl = document.getElementById('msg');
 const bodyEl = document.getElementById('groups-body');
 const createSection = document.getElementById('create-section');
 const createForm = document.getElementById('create-group-form');
+const teacherWrap = document.getElementById('group-teacher-wrap');
+const teacherSelect = document.getElementById('group-teacher');
 const logoutBtn = document.getElementById('logout-btn');
 const navLogoutBtn = document.getElementById('nav-logout-btn');
 const kpiGroupsVisibleEl = document.getElementById('kpi-groups-visible');
@@ -79,7 +81,29 @@ async function requireAuth() {
     createSection.classList.remove('hidden');
   }
 
+  if (currentRole === 'admin') {
+    await loadTeacherOptions();
+  }
+
   return true;
+}
+
+// Admin only: fill the "Преподавател" dropdown so groups can be assigned to teachers.
+async function loadTeacherOptions() {
+  if (!teacherSelect || !teacherWrap) return;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .eq('role', 'teacher')
+    .order('full_name', { nullsFirst: false });
+
+  if (error) return;
+
+  const options = ['<option value="">(без преподавател)</option>']
+    .concat((data || []).map((t) => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.full_name || `#${String(t.id).slice(0, 8)}`)}</option>`));
+  teacherSelect.innerHTML = options.join('');
+  teacherWrap.classList.remove('hidden');
 }
 
 async function getStudentGroupIds(studentId) {
@@ -208,7 +232,7 @@ createForm?.addEventListener('submit', async (e) => {
     language,
     level,
     created_by: currentUser.id,
-    teacher_id: currentRole === 'teacher' ? currentUser.id : null,
+    teacher_id: currentRole === 'teacher' ? currentUser.id : (teacherSelect?.value || null),
   };
 
   const { error } = await supabase.from('groups').insert(payload);

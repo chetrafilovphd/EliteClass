@@ -108,20 +108,24 @@
                 <h2 class="h6">Нова група</h2>
                 <form id="create-group-form">
                   <div class="row g-2 align-items-end">
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-3">
                       <label class="form-label" for="group-name">Име</label>
                       <input id="group-name" class="form-control" placeholder="A1 Morning" required />
                     </div>
-                    <div class="col-12 col-md-3">
+                    <div class="col-6 col-md-3">
                       <label class="form-label" for="group-language">Език</label>
                       <input id="group-language" class="form-control" placeholder="English" required />
                     </div>
-                    <div class="col-12 col-md-3">
+                    <div class="col-6 col-md-2">
                       <label class="form-label" for="group-level">Ниво</label>
                       <input id="group-level" class="form-control" placeholder="A1" required />
                     </div>
+                    <div class="col-12 col-md-2 hidden" id="group-teacher-wrap">
+                      <label class="form-label" for="group-teacher">Преподавател</label>
+                      <select id="group-teacher" class="form-select"></select>
+                    </div>
                     <div class="col-12 col-md-2 d-grid">
-                      <button class="btn btn-primary" type="submit">Добави</button>
+                      <button class="btn btn-primary" type="submit"><i class="bi bi-plus-circle me-1"></i>Добави</button>
                     </div>
                   </div>
                 </form>

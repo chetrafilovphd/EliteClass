@@ -105,6 +105,55 @@
 
           <div class="card border-0 bg-light mb-3">
             <div class="card-body">
+              <h2 class="h6"><i class="bi bi-person-plus me-1"></i>Създай акаунт</h2>
+              <p class="elite-muted small mb-2">Създай профил за учител, ученик или родител и му дай временната парола, за да влезе.</p>
+              <form id="create-user-form">
+                <div class="row g-2 align-items-end">
+                  <div class="col-12 col-md-4">
+                    <label class="form-label" for="cu-full-name">Три имена</label>
+                    <input id="cu-full-name" class="form-control" placeholder="Име Презиме Фамилия" />
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <label class="form-label" for="cu-email">Имейл</label>
+                    <input id="cu-email" class="form-control" type="email" placeholder="user@example.com" required />
+                  </div>
+                  <div class="col-6 col-md-2">
+                    <label class="form-label" for="cu-role">Роля</label>
+                    <select id="cu-role" class="form-select">
+                      <option value="student">Ученик</option>
+                      <option value="parent">Родител</option>
+                      <option value="teacher">Учител</option>
+                      <option value="admin">Админ</option>
+                    </select>
+                  </div>
+                  <div class="col-6 col-md-2 d-grid">
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-plus-circle me-1"></i>Създай</button>
+                  </div>
+                </div>
+                <div class="row g-2 align-items-end mt-1">
+                  <div class="col-12 col-md-4">
+                    <label class="form-label" for="cu-phone">Телефон</label>
+                    <input id="cu-phone" class="form-control" placeholder="по избор" />
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <label class="form-label" for="cu-address">Адрес</label>
+                    <input id="cu-address" class="form-control" placeholder="по избор" />
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <label class="form-label" for="cu-password">Временна парола</label>
+                    <div class="input-group">
+                      <input id="cu-password" class="form-control" placeholder="мин. 8 символа" />
+                      <button class="btn btn-outline-secondary" type="button" id="cu-generate">Генерирай</button>
+                    </div>
+                  </div>
+                </div>
+                <p id="cu-msg" class="small mb-0 mt-2"></p>
+              </form>
+            </div>
+          </div>
+
+          <div class="card border-0 bg-light mb-3">
+            <div class="card-body">
               <h2 class="h6">Нова връзка</h2>
               <form id="create-link-form">
                 <div class="row g-2 align-items-end">
