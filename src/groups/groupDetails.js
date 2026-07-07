@@ -180,6 +180,13 @@ function gradeLabel(value) {
   return String(value);
 }
 
+// Colour-coded grade badge (Bulgarian 2–6).
+function gradeBadge(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 2 || n > 6) return escapeHtml(String(value ?? '-'));
+  return `<span class="elite-grade elite-grade-${n}">${escapeHtml(String(value))}</span>`;
+}
+
 function todayIsoDate() {
   const now = new Date();
   const y = now.getFullYear();
@@ -614,7 +621,7 @@ async function loadGrades() {
         <td>${escapeHtml(g.graded_on)}</td>
         <td>${escapeHtml(studentLabel(g.student_id))}</td>
         <td>${escapeHtml(g.title)}</td>
-        <td>${escapeHtml(g.grade_value)} - ${escapeHtml(gradeLabel(g.grade_value))}</td>
+        <td>${gradeBadge(g.grade_value)} <span class="elite-muted small">${escapeHtml(gradeLabel(g.grade_value))}</span></td>
       </tr>
     `)
     .join('');

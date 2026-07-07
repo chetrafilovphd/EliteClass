@@ -8,6 +8,9 @@ const parentLinksBtn = document.getElementById('parent-links-btn');
 const parentLinksQuick = document.getElementById('parent-links-quick');
 const myHoursQuick = document.getElementById('my-hours-quick');
 const navMyHoursItem = document.getElementById('nav-my-hours-item');
+const roleIntroTextEl = document.getElementById('role-intro-text');
+const studentGradesQuick = document.getElementById('student-grades-quick');
+const parentOverviewQuick = document.getElementById('parent-overview-quick');
 
 const kpiGroupsEl = document.getElementById('kpi-groups');
 const kpiStudentsEl = document.getElementById('kpi-students');
@@ -94,6 +97,29 @@ function roleLabel(role) {
   if (role === 'student') return 'Ученик';
   if (role === 'parent') return 'Родител';
   return role || 'Неопределена';
+}
+
+function roleBadgeClass(role) {
+  if (role === 'admin') return 'elite-badge-admin';
+  if (role === 'teacher') return 'elite-badge-teacher';
+  if (role === 'student') return 'elite-badge-student';
+  if (role === 'parent') return 'elite-badge-parent';
+  return '';
+}
+
+function roleIntro(role) {
+  if (role === 'admin') return 'Управлявай потребители, роли и връзки родител-ученик. Имаш достъп до всичко.';
+  if (role === 'teacher') return 'Виж групите и часовете си; въвеждай оценки, отсъствия, забележки и домашни.';
+  if (role === 'student') return 'Тук са оценките, домашните и седмичното ти разписание.';
+  if (role === 'parent') return 'Следи оценките, домашните и часовете на детето си.';
+  return 'Добре дошъл в електронния дневник.';
+}
+
+// Colour-coded grade badge (Bulgarian 2–6). Non-numeric values pass through.
+function gradeBadge(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 2 || n > 6) return escapeHtml(String(value ?? '-'));
+  return `<span class="elite-grade elite-grade-${n}">${escapeHtml(String(value))}</span>`;
 }
 
 function sanitizeRole(role) {
@@ -383,7 +409,7 @@ async function loadStudentPanel() {
 
   studentGradesBodyEl.innerHTML = grades.length
     ? grades
-        .map((row) => `<tr><td>${escapeHtml(formatBgDate(row.graded_on))}</td><td>${escapeHtml(row.title ?? '-')}</td><td>${escapeHtml(row.grade_value ?? '-')}</td></tr>`)
+        .map((row) => `<tr><td>${escapeHtml(formatBgDate(row.graded_on))}</td><td>${escapeHtml(row.title ?? '-')}</td><td>${gradeBadge(row.grade_value)}</td></tr>`)
         .join('')
     : '<tr><td colspan="3">Няма оценки.</td></tr>';
 
@@ -457,7 +483,7 @@ async function loadParentPanel() {
       const latestGrade = latestGradeByStudent.get(studentId)?.grade_value ?? '-';
       const nextLesson = nextLessonByStudent.get(studentId) || '-';
       const nextHw = nextHomeworkByStudent.get(studentId) || '-';
-      return `<tr><td>${escapeHtml(studentName)}</td><td>${escapeHtml(nextLesson)}</td><td>${escapeHtml(String(latestGrade))}</td><td>${escapeHtml(nextHw)}</td></tr>`;
+      return `<tr><td>${escapeHtml(studentName)}</td><td>${escapeHtml(nextLesson)}</td><td>${gradeBadge(latestGrade)}</td><td>${escapeHtml(nextHw)}</td></tr>`;
     })
     .join('');
 }
@@ -584,13 +610,22 @@ async function loadUser() {
   currentProfile = profile;
 
   nameEl.textContent = profile.full_name || session.user.email;
-  roleEl.textContent = roleLabel(profile.role);
+  if (roleEl) {
+    roleEl.className = `elite-badge-soft ${roleBadgeClass(profile.role)}`;
+    roleEl.textContent = roleLabel(profile.role);
+  }
+  setSafeText(roleIntroTextEl, roleIntro(profile.role));
 
   if (profile.role === 'parent') {
+    parentOverviewQuick?.classList.remove('hidden');
     const { data: claimedCount, error: claimError } = await supabase.rpc('claim_parent_links_for_current_user');
     if (!claimError && Number(claimedCount) > 0) {
       showInfoNote(`Автоматично свързахме ${claimedCount} ученик/ученици към родителския профил.`);
     }
+  }
+
+  if (profile.role === 'student') {
+    studentGradesQuick?.classList.remove('hidden');
   }
 
   if (profile.role === 'admin') {

@@ -42,8 +42,8 @@
             <div class="elite-brand">
               <img class="elite-logo" src="logoEliteLingua.jpg" alt="Elite Class Logo" />
               <div>
-                <h1 class="h4 mb-0">Начално табло</h1>
-                <p class="elite-muted mb-0 small">Elite Class</p>
+                <h1 class="h4 mb-1">Здравей, <span id="user-name">...</span>!</h1>
+                <span id="user-role" class="elite-badge-soft">...</span>
               </div>
             </div>
             <div class="d-flex flex-wrap gap-2">
@@ -53,12 +53,9 @@
             </div>
           </div>
 
-          <div class="card bg-light border-0 mt-4">
-            <div class="card-body">
-              <p class="mb-2"><strong>Име:</strong> <span id="user-name">...</span></p>
-              <p class="mb-2"><strong>Роля:</strong> <span id="user-role">...</span></p>
-              <p class="mb-0">Успешно влязохте в системата.</p>
-            </div>
+          <div id="role-intro" class="alert alert-light border d-flex align-items-start gap-2 mt-4 mb-0">
+            <i class="bi bi-info-circle mt-1"></i>
+            <span id="role-intro-text">Добре дошъл в електронния дневник.</span>
           </div>
 
           <div id="dashboard-info-note" class="alert alert-success mt-3 hidden" role="status"></div>
@@ -170,15 +167,27 @@
 
           <div class="card border-0 bg-light mt-3">
             <div class="card-body">
-              <h2 class="h6 mb-3"><i class="bi bi-lightning-charge me-2"></i>Бързи действия</h2>
+              <h2 class="h6 mb-3"><i class="bi bi-grid-3x3-gap me-2"></i>Бърз достъп</h2>
               <div class="elite-quick-grid">
                 <a class="elite-quick-card" href="groups.html">
-                  <div class="elite-quick-title"><i class="bi bi-people me-1"></i>Управление на групи</div>
-                  <div class="elite-quick-text">Преглед, създаване и отваряне на групи.</div>
+                  <div class="elite-quick-title"><i class="bi bi-people me-1"></i>Групи</div>
+                  <div class="elite-quick-text">Групи, ученици, уроци, оценки и домашни.</div>
+                </a>
+                <a class="elite-quick-card" href="schedule.html">
+                  <div class="elite-quick-title"><i class="bi bi-calendar-week me-1"></i>Разписание</div>
+                  <div class="elite-quick-text">Часовете по дни от седмицата.</div>
                 </a>
                 <a class="elite-quick-card" href="calendar.html">
-                  <div class="elite-quick-title"><i class="bi bi-calendar3 me-1"></i>Училищен календар</div>
-                  <div class="elite-quick-text">Следи и управлявай събитията по групи.</div>
+                  <div class="elite-quick-title"><i class="bi bi-calendar3 me-1"></i>Календар</div>
+                  <div class="elite-quick-text">Събития и изпитвания по групи.</div>
+                </a>
+                <a class="elite-quick-card hidden" id="student-grades-quick" href="#student-panel">
+                  <div class="elite-quick-title"><i class="bi bi-clipboard2-check me-1"></i>Моите оценки и домашни</div>
+                  <div class="elite-quick-text">Оценки, домашни и седмична заетост.</div>
+                </a>
+                <a class="elite-quick-card hidden" id="parent-overview-quick" href="#parent-panel">
+                  <div class="elite-quick-title"><i class="bi bi-person-hearts me-1"></i>Данни за детето</div>
+                  <div class="elite-quick-text">Следващ урок, последна оценка и домашни.</div>
                 </a>
                 <a class="elite-quick-card hidden" id="parent-links-quick" href="parent-links.html">
                   <div class="elite-quick-title"><i class="bi bi-diagram-3 me-1"></i>Родител-ученик</div>

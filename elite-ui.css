@@ -662,3 +662,34 @@ main a:not(.btn):not(.nav-link):not(.navbar-brand):not(.elite-quick-card):hover 
 .elite-trust .elite-chip i {
   color: var(--elite-gold);
 }
+
+/* Colour-coded grades (Bulgarian 2–6), shkolo-style. */
+.elite-grade {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.9rem;
+  height: 1.9rem;
+  padding: 0 0.45rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.elite-grade-2 { background: #fee2e2; color: #b91c1c; }
+.elite-grade-3 { background: #ffedd5; color: #c2410c; }
+.elite-grade-4 { background: #fef9c3; color: #a16207; }
+.elite-grade-5 { background: #dcfce7; color: #15803d; }
+.elite-grade-6 { background: #bbf7d0; color: #166534; }
+
+/* Role hub: bigger, tappable action tiles with a gold hover accent. */
+.elite-quick-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.elite-quick-card:hover {
+  border-color: var(--elite-gold);
+}
+.elite-quick-title {
+  font-size: 1rem;
+}
