@@ -75,9 +75,9 @@ async function requireAuth() {
   if (kpiGroupsRoleEl) {
     kpiGroupsRoleEl.innerHTML = `<span class="elite-badge-soft ${roleBadgeClass(currentRole)}">${escapeHtml(roleLabel(currentRole))}</span>`;
   }
-  setKpiText(kpiGroupsCreateEl, currentRole === 'admin' || currentRole === 'teacher' ? 'Разрешено' : 'Само преглед');
+  setKpiText(kpiGroupsCreateEl, currentRole === 'admin' ? 'Разрешено' : 'Само преглед');
 
-  if (currentRole === 'admin' || currentRole === 'teacher') {
+  if (currentRole === 'admin') {
     createSection.classList.remove('hidden');
   }
 
@@ -220,8 +220,8 @@ createForm?.addEventListener('submit', async (e) => {
     return;
   }
 
-  if (!(currentRole === 'admin' || currentRole === 'teacher')) {
-    showMessage('Нямаш права да създаваш групи.');
+  if (currentRole !== 'admin') {
+    showMessage('Само администратор може да създава групи.');
     return;
   }
 

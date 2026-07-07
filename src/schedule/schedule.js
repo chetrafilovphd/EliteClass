@@ -70,8 +70,9 @@ function formatTime(value) {
   return String(value).slice(0, 5);
 }
 
+// Only the admin builds the weekly schedule. Teachers/students/parents view it.
 function canManage() {
-  return currentRole === 'admin' || currentRole === 'teacher';
+  return currentRole === 'admin';
 }
 
 async function requireAuth() {

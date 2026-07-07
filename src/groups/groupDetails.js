@@ -223,12 +223,16 @@ async function requireAuth() {
   currentRole = profile.role;
 
   if (canManage()) {
-    manageSection.classList.remove('hidden');
     lessonManageSection.classList.remove('hidden');
     gradesManageSection.classList.remove('hidden');
     homeworksManageSection.classList.remove('hidden');
     submissionsSection.classList.remove('hidden');
     remarksManageSection.classList.remove('hidden');
+  }
+
+  // Enrolling students into a group is an admin task (teachers only enter grades).
+  if (currentRole === 'admin') {
+    manageSection.classList.remove('hidden');
   }
 
   return true;
@@ -311,7 +315,7 @@ async function loadStudents() {
   groupStudents = data || [];
   await loadStudentNames(groupStudents.map((r) => r.student_id));
   renderStudentSelectOptions();
-  if (canManage()) await loadAddStudentOptions();
+  if (currentRole === 'admin') await loadAddStudentOptions();
   setKpiText(kpiStudentsEl, String(groupStudents.length));
 
   if (!data || data.length === 0) {
