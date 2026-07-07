@@ -1,13 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const env = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
-
-// Prefer env vars (set VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY in Netlify or
-// .env). Fall back to the project's PUBLISHABLE anon key, which is public by
-// design — it ships to every browser and is protected by RLS — so the site
-// keeps working even before env vars are configured. Rotating the key later is
-// still recommended; if you do, update these fallbacks and the env vars.
-const supabaseUrl = env.VITE_SUPABASE_URL || 'https://xqltmgpableypmkmycjp.supabase.co';
-const supabaseAnonKey = env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_HuJ7Zgi8lx5D0u_Vcp7t9g_YvqDC5Hn';
+// Active project (EliteClass, eu-central-1). Hardcoded on purpose: Netlify still
+// has stale VITE_SUPABASE_* env vars pointing at the OLD (paused) project, and
+// Vite bakes those in at build time — they would override any env-based value
+// here. The publishable/anon key is public by design (ships to every browser,
+// protected by RLS). Once the stale Netlify env vars are removed/updated to this
+// project, we can go back to reading env vars first.
+const supabaseUrl = 'https://xqltmgpableypmkmycjp.supabase.co';
+const supabaseAnonKey = 'sb_publishable_HuJ7Zgi8lx5D0u_Vcp7t9g_YvqDC5Hn';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
