@@ -191,13 +191,15 @@ create table if not exists public.grades (
   id uuid primary key default gen_random_uuid(),
   group_id uuid not null references public.groups (id) on delete cascade,
   student_id uuid not null references public.profiles (id) on delete cascade,
-  grade_value smallint not null,
-  title text not null,
+  grade_value smallint,                 -- optional Bulgarian 2–6 scale
+  percentage numeric(5,2),              -- result as a percentage (0–100)
+  title text not null,                  -- assessment type (Тест, Writing, …)
   description text,
   graded_on date not null default current_date,
   created_by uuid references public.profiles (id) on delete set null,
   created_at timestamptz not null default now(),
-  constraint grades_value_range check (grade_value between 2 and 6)
+  constraint grades_value_range check (grade_value is null or grade_value between 2 and 6),
+  constraint grades_percentage_range check (percentage is null or (percentage >= 0 and percentage <= 100))
 );
 create index if not exists idx_grades_group_id on public.grades (group_id);
 create index if not exists idx_grades_student_id on public.grades (student_id);
@@ -974,6 +976,23 @@ using (
   bucket_id = 'profile-avatars'
   and (storage.foldername(name))[1] = auth.uid()::text
 );
+
+
+-- ========================= homework_materials.sql =========================
+
+
+-- ========================= grades_percentage.sql =========================
+-- Grades as a percentage (0–100) per assessment type, for language-school
+-- style marking. The Bulgarian 2–6 grade_value becomes optional.
+-- Idempotent; safe to run on an existing project.
+
+alter table public.grades add column if not exists percentage numeric(5,2);
+alter table public.grades alter column grade_value drop not null;
+
+do $$ begin
+  alter table public.grades
+    add constraint grades_percentage_range check (percentage is null or (percentage >= 0 and percentage <= 100));
+exception when duplicate_object then null; end $$;
 
 
 -- ========================= schedule.sql =========================

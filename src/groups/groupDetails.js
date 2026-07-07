@@ -11,17 +11,12 @@ const navLogoutBtn = document.getElementById('nav-logout-btn');
 const lessonManageSection = document.getElementById('lesson-manage-section');
 const createLessonForm = document.getElementById('create-lesson-form');
 const lessonsBody = document.getElementById('lessons-body');
-const lessonSelect = document.getElementById('attendance-lesson-select');
-const loadAttendanceBtn = document.getElementById('load-attendance-btn');
-const attendanceManageSection = document.getElementById('attendance-manage-section');
-const attendanceBody = document.getElementById('attendance-body');
-const saveAttendanceBtn = document.getElementById('save-attendance-btn');
 
 const gradesManageSection = document.getElementById('grades-manage-section');
 const createGradeForm = document.getElementById('create-grade-form');
 const gradeStudentSelect = document.getElementById('grade-student-id');
 const gradeTypeSelect = document.getElementById('grade-type');
-const gradeValueSelect = document.getElementById('grade-value');
+const gradePercentInput = document.getElementById('grade-percent');
 const gradeDateInput = document.getElementById('grade-date');
 const gradesBody = document.getElementById('grades-body');
 const homeworksManageSection = document.getElementById('homeworks-manage-section');
@@ -170,21 +165,16 @@ async function canAccessGroup(targetGroupId) {
   return false;
 }
 
-function gradeLabel(value) {
-  const n = Number(value);
-  if (n === 2) return 'Слаб';
-  if (n === 3) return 'Среден';
-  if (n === 4) return 'Добър';
-  if (n === 5) return 'Много добър';
-  if (n === 6) return 'Отличен';
-  return String(value);
-}
-
-// Colour-coded grade badge (Bulgarian 2–6).
-function gradeBadge(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n) || n < 2 || n > 6) return escapeHtml(String(value ?? '-'));
-  return `<span class="elite-grade elite-grade-${n}">${escapeHtml(String(value))}</span>`;
+// Colour-coded percentage badge (result 0–100%), banded red→green.
+function percentBadge(pct) {
+  const n = Number(pct);
+  if (!Number.isFinite(n)) return escapeHtml(String(pct ?? '-'));
+  let band = 2;
+  if (n >= 95) band = 6;
+  else if (n >= 85) band = 5;
+  else if (n >= 70) band = 4;
+  else if (n >= 50) band = 3;
+  return `<span class="elite-grade elite-grade-${band}">${escapeHtml(String(Math.round(n)))}%</span>`;
 }
 
 function todayIsoDate() {
@@ -235,7 +225,6 @@ async function requireAuth() {
   if (canManage()) {
     manageSection.classList.remove('hidden');
     lessonManageSection.classList.remove('hidden');
-    attendanceManageSection.classList.remove('hidden');
     gradesManageSection.classList.remove('hidden');
     homeworksManageSection.classList.remove('hidden');
     submissionsSection.classList.remove('hidden');
@@ -327,7 +316,6 @@ async function loadStudents() {
 
   if (!data || data.length === 0) {
     studentsBody.innerHTML = '<tr><td colspan="3" class="elite-empty"><i class="bi bi-inbox"></i>Няма ученици в тази група.</td></tr>';
-    attendanceBody.innerHTML = '<tr><td colspan="2" class="elite-empty"><i class="bi bi-inbox"></i>Няма ученици за присъствия.</td></tr>';
     return;
   }
 
@@ -440,7 +428,6 @@ async function loadLessons() {
 
   if (!data || data.length === 0) {
     lessonsBody.innerHTML = '<tr><td colspan="3" class="elite-empty"><i class="bi bi-inbox"></i>Няма уроци за тази група.</td></tr>';
-    lessonSelect.innerHTML = '<option value="">Няма уроци</option>';
     setKpiText(kpiLessonsEl, '0');
     return;
   }
@@ -456,16 +443,6 @@ async function loadLessons() {
       </tr>
     `)
     .join('');
-
-  lessonSelect.innerHTML = data
-    .map((lesson) => `<option value="${escapeHtml(lesson.id)}">${escapeHtml(lesson.lesson_date)} - ${escapeHtml(lesson.topic)}</option>`)
-    .join('');
-
-  if (lessonIdFromQuery && data.some((lesson) => lesson.id === lessonIdFromQuery)) {
-    lessonSelect.value = lessonIdFromQuery;
-    await loadAttendanceForSelectedLesson();
-    showMessage('Зареден е избраният урок и присъствията му.');
-  }
 }
 
 createLessonForm?.addEventListener('submit', async (e) => {
@@ -505,99 +482,10 @@ createLessonForm?.addEventListener('submit', async (e) => {
   await loadLessons();
 });
 
-async function loadAttendanceForSelectedLesson() {
-  const lessonId = lessonSelect.value;
-
-  if (!lessonId) {
-    showMessage('Избери урок.');
-    return;
-  }
-
-  if (groupStudents.length === 0) {
-    showMessage('Няма ученици в групата.');
-    return;
-  }
-
-  showMessage('Зареждаме присъствия...');
-
-  const { data: existing, error } = await supabase
-    .from('attendance')
-    .select('id, student_id, status')
-    .eq('lesson_id', lessonId);
-
-  if (error) {
-    showMessage(`Грешка при зареждане на присъствия: ${error.message}`);
-    return;
-  }
-
-  const byStudent = new Map((existing || []).map((row) => [row.student_id, row.status]));
-
-  attendanceBody.innerHTML = groupStudents
-    .map((row) => {
-      const status = byStudent.get(row.student_id) || 'present';
-      return `
-        <tr>
-          <td class="fw-semibold">${escapeHtml(studentLabel(row.student_id))}</td>
-          <td>
-            <select class="form-select form-select-sm js-att-status" data-student-id="${escapeHtml(row.student_id)}">
-              <option value="present" ${status === 'present' ? 'selected' : ''}>Присъства</option>
-              <option value="late" ${status === 'late' ? 'selected' : ''}>Закъснял</option>
-              <option value="absent" ${status === 'absent' ? 'selected' : ''}>Отсъства</option>
-            </select>
-          </td>
-        </tr>
-      `;
-    })
-    .join('');
-
-  showMessage('Присъствията са заредени.');
-}
-
-loadAttendanceBtn?.addEventListener('click', async () => {
-  await loadAttendanceForSelectedLesson();
-});
-
-saveAttendanceBtn?.addEventListener('click', async () => {
-  if (!canManage()) {
-    showMessage('Нямаш права за това действие.');
-    return;
-  }
-
-  const lessonId = lessonSelect.value;
-  if (!lessonId) {
-    showMessage('Избери урок.');
-    return;
-  }
-
-  const rows = Array.from(document.querySelectorAll('.js-att-status')).map((el) => ({
-    lesson_id: lessonId,
-    student_id: el.getAttribute('data-student-id'),
-    status: el.value,
-  }));
-
-  if (rows.length === 0) {
-    showMessage('Няма данни за запис. Зареди присъствията първо.');
-    return;
-  }
-
-  showMessage('Записваме присъствия...');
-
-  const { error } = await supabase
-    .from('attendance')
-    .upsert(rows, { onConflict: 'lesson_id,student_id' });
-
-  if (error) {
-    showMessage(`Грешка при запис на присъствия: ${error.message}`);
-    return;
-  }
-
-  showMessage('Присъствията са записани успешно.');
-});
-
 async function loadGrades() {
   const { data, error } = await supabase
     .from('grades')
-    .select('id, student_id, title, grade_value, graded_on')
+    .select('id, student_id, title, percentage, graded_on')
     .eq('group_id', groupId)
     .order('graded_on', { ascending: false });
 
@@ -621,7 +509,7 @@ async function loadGrades() {
         <td>${escapeHtml(g.graded_on)}</td>
         <td>${escapeHtml(studentLabel(g.student_id))}</td>
         <td>${escapeHtml(g.title)}</td>
-        <td>${gradeBadge(g.grade_value)} <span class="elite-muted small">${escapeHtml(gradeLabel(g.grade_value))}</span></td>
+        <td>${percentBadge(g.percentage)}</td>
       </tr>
     `)
     .join('');
@@ -953,11 +841,16 @@ createGradeForm?.addEventListener('submit', async (e) => {
 
   const studentId = gradeStudentSelect.value;
   const gradeType = gradeTypeSelect.value;
-  const gradeValue = Number(gradeValueSelect.value);
+  const percent = Number(gradePercentInput.value);
   const gradeDate = gradeDateInput.value;
 
-  if (!studentId || !gradeType || !gradeDate) {
-    showMessage('Попълни всички полета за оценката.');
+  if (!studentId || !gradeType || !gradeDate || gradePercentInput.value === '') {
+    showMessage('Попълни ученик, тип, резултат (%) и дата.');
+    return;
+  }
+
+  if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+    showMessage('Резултатът трябва да е между 0 и 100%.');
     return;
   }
 
@@ -966,7 +859,7 @@ createGradeForm?.addEventListener('submit', async (e) => {
   const { error } = await supabase.from('grades').insert({
     group_id: groupId,
     student_id: studentId,
-    grade_value: gradeValue,
+    percentage: percent,
     title: gradeType,
     description: null,
     graded_on: gradeDate,

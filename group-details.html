@@ -179,31 +179,6 @@
             </table>
           </div>
 
-          <h2 class="h5 mt-4">Присъствия</h2>
-          <p class="elite-muted small">Избери урок и маркирай статуса за всеки ученик.</p>
-          <div class="row g-2 mb-3">
-            <div class="col-12 col-md-8">
-              <select id="attendance-lesson-select" class="form-select"></select>
-            </div>
-            <div class="col-12 col-md-4 d-grid">
-              <button class="btn btn-primary" id="load-attendance-btn" type="button">Зареди присъствия</button>
-            </div>
-          </div>
-          <section id="attendance-manage-section" class="hidden">
-            <div class="table-responsive">
-              <table class="table table-striped table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th><i class="bi bi-person-circle me-1"></i>Ученик</th>
-                    <th><i class="bi bi-check2-square me-1"></i>Статус</th>
-                  </tr>
-                </thead>
-                <tbody id="attendance-body"></tbody>
-              </table>
-            </div>
-            <button class="btn btn-primary" id="save-attendance-btn" type="button">Запази присъствия</button>
-          </section>
-
           <h2 class="h5 mt-4">Оценки</h2>
           <section id="grades-manage-section" class="hidden mb-3">
             <form id="create-grade-form">
@@ -213,28 +188,25 @@
                   <select id="grade-student-id" class="form-select" required></select>
                 </div>
                 <div class="col-12 col-md-3">
-                  <label class="form-label" for="grade-type">Тип</label>
+                  <label class="form-label" for="grade-type">Тип оценяване</label>
                   <select id="grade-type" class="form-select" required>
-                    <option value="Проект">Проект</option>
                     <option value="Тест">Тест</option>
-                    <option value="Активно участие">Активно участие</option>
-                    <option value="Устно изпитване">Устно изпитване</option>
+                    <option value="Writing">Writing (Писане)</option>
+                    <option value="Speaking">Speaking (Говорене)</option>
+                    <option value="Reading">Reading (Четене)</option>
+                    <option value="Listening">Listening (Слушане)</option>
+                    <option value="Grammar">Grammar (Граматика)</option>
+                    <option value="Vocabulary">Vocabulary (Лексика)</option>
                     <option value="Домашна работа">Домашна работа</option>
-                    <option value="Писмено изпитване">Писмено изпитване</option>
+                    <option value="Активно участие">Активно участие</option>
+                    <option value="Проект">Проект</option>
                     <option value="Входно ниво">Входно ниво</option>
                     <option value="Изходно ниво">Изходно ниво</option>
-                    <option value="Самостоятелна работа">Самостоятелна работа</option>
                   </select>
                 </div>
                 <div class="col-12 col-md-2">
-                  <label class="form-label" for="grade-value">Оценка</label>
-                  <select id="grade-value" class="form-select" required>
-                    <option value="2">2 - Слаб</option>
-                    <option value="3">3 - Среден</option>
-                    <option value="4">4 - Добър</option>
-                    <option value="5">5 - Много добър</option>
-                    <option value="6">6 - Отличен</option>
-                  </select>
+                  <label class="form-label" for="grade-percent">Резултат (%)</label>
+                  <input id="grade-percent" class="form-control" type="number" min="0" max="100" step="1" placeholder="0–100" required />
                 </div>
                 <div class="col-12 col-md-2">
                   <label class="form-label" for="grade-date">Дата</label>
@@ -253,7 +225,7 @@
                   <th><i class="bi bi-calendar2-week me-1"></i>Дата</th>
                   <th><i class="bi bi-person-vcard me-1"></i>Ученик</th>
                   <th><i class="bi bi-tag me-1"></i>Тип</th>
-                  <th><i class="bi bi-123 me-1"></i>Оценка</th>
+                  <th><i class="bi bi-percent me-1"></i>Резултат</th>
                 </tr>
               </thead>
               <tbody id="grades-body"></tbody>

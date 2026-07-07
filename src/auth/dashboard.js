@@ -115,11 +115,16 @@ function roleIntro(role) {
   return 'Добре дошъл в електронния дневник.';
 }
 
-// Colour-coded grade badge (Bulgarian 2–6). Non-numeric values pass through.
-function gradeBadge(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n) || n < 2 || n > 6) return escapeHtml(String(value ?? '-'));
-  return `<span class="elite-grade elite-grade-${n}">${escapeHtml(String(value))}</span>`;
+// Colour-coded percentage badge (result 0–100%), banded red→green.
+function percentBadge(pct) {
+  const n = Number(pct);
+  if (!Number.isFinite(n)) return escapeHtml(String(pct ?? '-'));
+  let band = 2;
+  if (n >= 95) band = 6;
+  else if (n >= 85) band = 5;
+  else if (n >= 70) band = 4;
+  else if (n >= 50) band = 3;
+  return `<span class="elite-grade elite-grade-${band}">${escapeHtml(String(Math.round(n)))}%</span>`;
 }
 
 function sanitizeRole(role) {
@@ -385,7 +390,7 @@ async function loadStudentPanel() {
       .order('lesson_date', { ascending: true }),
     supabase
       .from('grades')
-      .select('graded_on, title, grade_value')
+      .select('graded_on, title, percentage')
       .eq('student_id', currentSession.user.id)
       .order('graded_on', { ascending: false })
       .limit(8),
@@ -409,7 +414,7 @@ async function loadStudentPanel() {
 
   studentGradesBodyEl.innerHTML = grades.length
     ? grades
-        .map((row) => `<tr><td>${escapeHtml(formatBgDate(row.graded_on))}</td><td>${escapeHtml(row.title ?? '-')}</td><td>${gradeBadge(row.grade_value)}</td></tr>`)
+        .map((row) => `<tr><td>${escapeHtml(formatBgDate(row.graded_on))}</td><td>${escapeHtml(row.title ?? '-')}</td><td>${percentBadge(row.percentage)}</td></tr>`)
         .join('')
     : '<tr><td colspan="3">Няма оценки.</td></tr>';
 
@@ -441,7 +446,7 @@ async function loadParentPanel() {
       .in('student_id', studentIds),
     supabase
       .from('grades')
-      .select('student_id, graded_on, grade_value')
+      .select('student_id, graded_on, percentage')
       .in('student_id', studentIds)
       .order('graded_on', { ascending: false }),
     supabase
@@ -480,10 +485,10 @@ async function loadParentPanel() {
   parentOverviewBodyEl.innerHTML = studentIds
     .map((studentId) => {
       const studentName = (links || []).find((l) => l.student_id === studentId)?.profiles?.full_name || studentId;
-      const latestGrade = latestGradeByStudent.get(studentId)?.grade_value ?? '-';
+      const latestGrade = latestGradeByStudent.get(studentId)?.percentage ?? '-';
       const nextLesson = nextLessonByStudent.get(studentId) || '-';
       const nextHw = nextHomeworkByStudent.get(studentId) || '-';
-      return `<tr><td>${escapeHtml(studentName)}</td><td>${escapeHtml(nextLesson)}</td><td>${gradeBadge(latestGrade)}</td><td>${escapeHtml(nextHw)}</td></tr>`;
+      return `<tr><td>${escapeHtml(studentName)}</td><td>${escapeHtml(nextLesson)}</td><td>${percentBadge(latestGrade)}</td><td>${escapeHtml(nextHw)}</td></tr>`;
     })
     .join('');
 }
