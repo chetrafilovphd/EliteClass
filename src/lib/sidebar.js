@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { href: 'groups.html', icon: 'bi-people', label: 'Групи', roles: '*' },
   { href: 'schedule.html', icon: 'bi-calendar-week', label: 'Разписание', roles: '*' },
   { href: 'calendar.html', icon: 'bi-calendar-event', label: 'Календар', roles: '*' },
-  { href: 'my-hours.html', icon: 'bi-journal-check', label: 'Моите часове', roles: ['teacher'] },
+  { href: 'my-hours.html', icon: 'bi-journal-check', label: 'Моят час', roles: ['teacher', 'admin'] },
   { href: 'parent-links.html', icon: 'bi-shield-lock', label: 'Администрация', roles: ['admin'] },
 ];
 
