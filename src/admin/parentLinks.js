@@ -513,12 +513,34 @@ function translit(str) {
   return String(str ?? '').toLowerCase().split('').map((c) => (TRANSLIT[c] ?? c)).join('').replace(/[^a-z0-9]/g, '');
 }
 
+// Download an array of rows (array of arrays) as a UTF-8 CSV (Excel-friendly).
+function downloadCsv(filename, rows) {
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = rows.map((r) => r.map(esc).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function fileStamp() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+}
+
 const bulkBtn = document.getElementById('bulk-create-btn');
 const bulkNamesEl = document.getElementById('bulk-names');
 const bulkRoleEl = document.getElementById('bulk-role');
 const bulkMsgEl = document.getElementById('bulk-msg');
 const bulkResultsWrap = document.getElementById('bulk-results-wrap');
 const bulkResultsEl = document.getElementById('bulk-results');
+const bulkDownloadBtn = document.getElementById('bulk-download');
 
 function bulkShow(text, cls = 'text-muted') {
   if (bulkMsgEl) { bulkMsgEl.textContent = text; bulkMsgEl.className = `small mb-0 mt-2 ${cls}`; }
@@ -532,7 +554,9 @@ bulkBtn?.addEventListener('click', async () => {
   bulkBtn.disabled = true;
   bulkResultsEl.innerHTML = '';
   bulkResultsWrap.classList.remove('hidden');
+  bulkDownloadBtn?.classList.add('hidden');
   let ok = 0; let fail = 0;
+  const csvRows = [['Име', 'Потребителско име (имейл)', 'Парола', 'Роля', 'Статус']];
 
   for (const line of lines) {
     const parts = line.split(/\s+/);
@@ -544,20 +568,26 @@ bulkBtn?.addEventListener('click', async () => {
     const password = `${fp.charAt(0).toUpperCase()}${sp.charAt(0)}123456!`;
 
     bulkShow(`Създаваме… ${line}`);
-    let status;
+    let statusText;
     try {
       const { data, error } = await supabase.functions.invoke('admin-create-user', {
         body: { full_name: line, email, role, password },
       });
-      if (error || !data?.ok) { status = `<span class="text-danger">${escapeHtml(data?.error || error?.message || 'грешка')}</span>`; fail += 1; } else { status = '<span class="text-success">създаден ✓</span>'; ok += 1; }
+      if (error || !data?.ok) { statusText = data?.error || error?.message || 'грешка'; fail += 1; } else { statusText = 'създаден'; ok += 1; }
     } catch (e) {
-      status = `<span class="text-danger">${escapeHtml(e.message)}</span>`; fail += 1;
+      statusText = e.message; fail += 1;
     }
+    const cls = statusText === 'създаден' ? 'text-success' : 'text-danger';
+    csvRows.push([line, email, password, roleLabelBg(role), statusText]);
     bulkResultsEl.insertAdjacentHTML('beforeend',
-      `<tr><td>${escapeHtml(line)}</td><td>${escapeHtml(email)}</td><td><code>${escapeHtml(password)}</code></td><td>${status}</td></tr>`);
+      `<tr><td>${escapeHtml(line)}</td><td>${escapeHtml(email)}</td><td><code>${escapeHtml(password)}</code></td><td><span class="${cls}">${escapeHtml(statusText)}</span></td></tr>`);
   }
 
-  bulkShow(`Готово: ${ok} създадени, ${fail} грешки. Копирай таблицата и раздай паролите.`, fail ? 'text-warning' : 'text-success');
+  bulkShow(`Готово: ${ok} създадени, ${fail} грешки. Копирай таблицата или свали .csv.`, fail ? 'text-warning' : 'text-success');
+  if (csvRows.length > 1 && bulkDownloadBtn) {
+    bulkDownloadBtn.classList.remove('hidden');
+    bulkDownloadBtn.onclick = () => downloadCsv(`elite-akaunti-${fileStamp()}.csv`, csvRows);
+  }
   bulkBtn.disabled = false;
   await loadUsers();
 });
@@ -569,6 +599,7 @@ const importBtn = document.getElementById('import-btn');
 const importMsgEl = document.getElementById('import-msg');
 const importResultsWrap = document.getElementById('import-results-wrap');
 const importResultsEl = document.getElementById('import-results');
+const importDownloadBtn = document.getElementById('import-download');
 
 function importShow(text, cls = 'text-muted') {
   if (importMsgEl) { importMsgEl.textContent = text; importMsgEl.className = `small mb-0 mt-2 ${cls}`; }
@@ -622,7 +653,9 @@ importBtn?.addEventListener('click', async () => {
   importBtn.disabled = true;
   importResultsEl.innerHTML = '';
   importResultsWrap.classList.remove('hidden');
+  importDownloadBtn?.classList.add('hidden');
   const parentCache = new Map();
+  const csvRows = [['Ученик', 'Ученик — имейл', 'Ученик — парола', 'Родител', 'Родител — имейл', 'Родител — парола', 'Статус']];
   let ok = 0; let fail = 0;
 
   for (const line of lines) {
@@ -668,11 +701,24 @@ importBtn?.addEventListener('click', async () => {
     const statusHtml = notes.length
       ? `<span class="text-warning">${escapeHtml(notes.join('; '))}</span>`
       : '<span class="text-success">✓</span>';
+    csvRows.push([
+      studentPart,
+      st.id ? st.email : '',
+      st.id ? st.password : '',
+      parentPart || '',
+      parent?.id ? parent.email : '',
+      parent?.id ? parent.password : '',
+      notes.length ? notes.join('; ') : 'OK',
+    ]);
     importResultsEl.insertAdjacentHTML('beforeend',
       `<tr><td>${escapeHtml(studentPart)}</td><td>${stCreds}</td><td>${escapeHtml(parentPart || '—')}</td><td>${pCreds}</td><td>${statusHtml}</td></tr>`);
   }
 
-  importShow(`Готово: ${ok} успешни, ${fail} с проблем. Копирай таблицата и раздай паролите.`, fail ? 'text-warning' : 'text-success');
+  importShow(`Готово: ${ok} успешни, ${fail} с проблем. Копирай таблицата или свали .csv.`, fail ? 'text-warning' : 'text-success');
+  if (csvRows.length > 1 && importDownloadBtn) {
+    importDownloadBtn.classList.remove('hidden');
+    importDownloadBtn.onclick = () => downloadCsv(`elite-klas-${fileStamp()}.csv`, csvRows);
+  }
   importBtn.disabled = false;
   await loadUsers();
 });
