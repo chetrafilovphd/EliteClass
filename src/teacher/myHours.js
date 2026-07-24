@@ -20,18 +20,16 @@ const bulkApplyBtn = document.getElementById('bulk-apply');
 const studentsListEl = document.getElementById('students-list');
 const saveAllBtn = document.getElementById('save-all-btn');
 
-const GRADE_TYPES = [
-  'Тест', 'Writing', 'Speaking', 'Reading', 'Listening',
-  'Grammar', 'Vocabulary', 'Домашна работа', 'Активно участие',
-  'Проект', 'Входно ниво', 'Изходно ниво',
-];
+const GRADE_TYPES = ['Писане', 'Тест', 'Диктовка', 'Говорене', 'Граматика', 'Четене', 'Слушане'];
 
 let currentUser = null;
 let currentRole = null;
 let slots = [];
 let students = [];               // [{ student_id, full_name }]
 let recentByStudent = new Map(); // student_id -> [{ percentage, title }]
+let absenceCountByStudent = new Map(); // student_id -> accumulated absence count
 const remarkState = new Map();   // student_id -> 'praise' | 'remark' | null
+const absentState = new Map();   // student_id -> true if marked absent for this session
 
 function showMessage(text, ok = false) {
   if (!msgEl) return;
@@ -142,6 +140,7 @@ async function loadLessonScreen() {
 
   showMessage('Зареждаме...');
   remarkState.clear();
+  absentState.clear();
 
   const { data: lesson } = await supabase
     .from('lessons').select('id, topic').eq('group_id', groupId).eq('lesson_date', dateStr).maybeSingle();
@@ -171,6 +170,17 @@ async function loadLessonScreen() {
     recentByStudent.set(g.student_id, list);
   });
 
+  // Accumulated absences per student (for the running statistic).
+  absenceCountByStudent = new Map();
+  const { data: absences } = await supabase
+    .from('attendance')
+    .select('student_id, lessons!inner(group_id)')
+    .eq('lessons.group_id', groupId)
+    .eq('status', 'absent');
+  (absences || []).forEach((a) => {
+    absenceCountByStudent.set(a.student_id, (absenceCountByStudent.get(a.student_id) || 0) + 1);
+  });
+
   renderStudents();
   lessonSection.classList.remove('hidden');
   emptyState.classList.add('hidden');
@@ -187,13 +197,21 @@ function renderStudents() {
     const recent = (recentByStudent.get(s.student_id) || [])
       .map((g) => `<span title="${escapeHtml(g.title || '')}">${percentBadge(g.percentage)}</span>`).join(' ');
     const sid = escapeHtml(s.student_id);
+    const absCount = absenceCountByStudent.get(s.student_id) || 0;
+    const absChip = absCount
+      ? `<span class="badge text-bg-secondary" title="Натрупани отсъствия"><i class="bi bi-calendar-x me-1"></i>${absCount}</span>`
+      : '';
     return `
       <div class="card border mb-2">
         <div class="card-body p-3">
-          <div class="d-flex justify-content-between align-items-start gap-2 mb-2 flex-wrap">
+          <div class="d-flex justify-content-between align-items-center gap-2 mb-2 flex-wrap">
             <div class="fw-semibold"><i class="bi bi-person-circle me-1 text-secondary"></i>${escapeHtml(s.full_name)}</div>
-            <div class="d-flex flex-wrap gap-1 justify-content-end">${recent || '<span class="elite-muted small">няма резултати</span>'}</div>
+            <div class="d-flex align-items-center gap-2">
+              ${absChip}
+              <button class="btn btn-sm btn-outline-danger js-absent" data-id="${sid}" type="button"><i class="bi bi-calendar-x me-1"></i>Отсъства</button>
+            </div>
           </div>
+          <div class="mb-2 d-flex flex-wrap gap-1">${recent || '<span class="elite-muted small">няма резултати</span>'}</div>
           <div class="row g-2 align-items-end">
             <div class="col-5 col-md-3">
               <label class="form-label small mb-1">Резултат %</label>
@@ -220,6 +238,16 @@ function renderStudents() {
 
   studentsListEl.querySelectorAll('.js-praise').forEach((b) => b.addEventListener('click', () => toggleRemark(b.dataset.id, 'praise')));
   studentsListEl.querySelectorAll('.js-remark').forEach((b) => b.addEventListener('click', () => toggleRemark(b.dataset.id, 'remark')));
+  studentsListEl.querySelectorAll('.js-absent').forEach((b) => b.addEventListener('click', () => toggleAbsent(b.dataset.id)));
+}
+
+function toggleAbsent(sid) {
+  const next = !absentState.get(sid);
+  absentState.set(sid, next);
+  const btn = studentsListEl.querySelector(`.js-absent[data-id="${CSS.escape(sid)}"]`);
+  btn?.classList.toggle('btn-danger', next);
+  btn?.classList.toggle('btn-outline-danger', !next);
+  if (btn) btn.innerHTML = `<i class="bi bi-calendar-x me-1"></i>Отсъства${next ? ' ✓' : ''}`;
 }
 
 function toggleRemark(sid, kind) {
@@ -258,18 +286,25 @@ saveAllBtn?.addEventListener('click', async () => {
   showMessage('Записваме...');
 
   try {
-    // 1) Lesson topic — one lesson per group per date.
+    // 1) Lesson — one per group per date; also needed to attach absences.
     const topic = topicInput.value.trim();
-    if (topic) {
+    const anyAbsent = [...absentState.values()].some(Boolean);
+    let lessonId = null;
+    if (topic || anyAbsent) {
       const { data: existing } = await supabase
         .from('lessons').select('id').eq('group_id', groupId).eq('lesson_date', dateStr).maybeSingle();
       if (existing?.id) {
-        const { error } = await supabase.from('lessons').update({ topic }).eq('id', existing.id);
-        if (error) throw new Error(`тема: ${error.message}`);
+        lessonId = existing.id;
+        if (topic) {
+          const { error } = await supabase.from('lessons').update({ topic }).eq('id', lessonId);
+          if (error) throw new Error(`тема: ${error.message}`);
+        }
       } else {
-        const { error } = await supabase.from('lessons')
-          .insert({ group_id: groupId, lesson_date: dateStr, topic, created_by: currentUser.id });
+        const { data: created, error } = await supabase.from('lessons')
+          .insert({ group_id: groupId, lesson_date: dateStr, topic: topic || 'Час', created_by: currentUser.id })
+          .select('id').single();
         if (error) throw new Error(`тема: ${error.message}`);
+        lessonId = created.id;
       }
     }
 
@@ -319,7 +354,21 @@ saveAllBtn?.addEventListener('click', async () => {
       if (error) throw new Error(`отзиви: ${error.message}`);
     }
 
-    showMessage(`Записано ✓ — ${gradeRows.length} резултата, ${remarkRows.length} отзива.`, true);
+    // 5) Attendance — record absences so they accumulate as a statistic.
+    let absentCount = 0;
+    if (lessonId) {
+      const attRows = [];
+      absentState.forEach((isAbsent, sid) => {
+        if (isAbsent) attRows.push({ lesson_id: lessonId, student_id: sid, status: 'absent' });
+      });
+      if (attRows.length) {
+        const { error } = await supabase.from('attendance').upsert(attRows, { onConflict: 'lesson_id,student_id' });
+        if (error) throw new Error(`отсъствия: ${error.message}`);
+        absentCount = attRows.length;
+      }
+    }
+
+    showMessage(`Записано ✓ — ${gradeRows.length} резултата, ${remarkRows.length} отзива, ${absentCount} отсъствия.`, true);
     homeworkTitleInput.value = '';
     await loadLessonScreen();
   } catch (e) {

@@ -154,6 +154,34 @@
 
           <div class="card border-0 bg-light mb-3">
             <div class="card-body">
+              <h2 class="h6"><i class="bi bi-people-fill me-1"></i>Групово създаване</h2>
+              <p class="elite-muted small mb-2">Постави имена — по едно на ред („Име Фамилия" или „Име Презиме Фамилия"). Генерира имейл и временна парола за всеки. Родителските връзки правиш след това.</p>
+              <div class="row g-2 align-items-end mb-2">
+                <div class="col-6 col-md-3">
+                  <label class="form-label" for="bulk-role">Роля за всички</label>
+                  <select id="bulk-role" class="form-select">
+                    <option value="student">Ученик</option>
+                    <option value="parent">Родител</option>
+                    <option value="teacher">Учител</option>
+                  </select>
+                </div>
+                <div class="col-6 col-md-3 d-grid">
+                  <button class="btn btn-primary" id="bulk-create-btn" type="button"><i class="bi bi-magic me-1"></i>Създай всички</button>
+                </div>
+              </div>
+              <textarea id="bulk-names" class="form-control" rows="5" placeholder="Иван Петров Георгиев&#10;Мария Стоянова"></textarea>
+              <p id="bulk-msg" class="small mb-0 mt-2"></p>
+              <div class="table-responsive mt-2 hidden" id="bulk-results-wrap">
+                <table class="table table-sm table-striped align-middle mb-0">
+                  <thead class="table-light"><tr><th>Име</th><th>Имейл</th><th>Парола</th><th>Статус</th></tr></thead>
+                  <tbody id="bulk-results"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="card border-0 bg-light mb-3">
+            <div class="card-body">
               <h2 class="h6">Нова връзка</h2>
               <form id="create-link-form">
                 <div class="row g-2 align-items-end">

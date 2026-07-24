@@ -94,8 +94,8 @@ async function loadTeacherOptions() {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name')
-    .eq('role', 'teacher')
+    .select('id, full_name, role')
+    .in('role', ['teacher', 'admin'])
     .order('full_name', { nullsFirst: false });
 
   if (error) return;

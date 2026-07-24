@@ -503,6 +503,65 @@ createUserForm?.addEventListener('submit', async (e) => {
   await loadUsers();
 });
 
+// --- Bulk account creation ---
+const TRANSLIT = {
+  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y',
+  к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u',
+  ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sht', ъ: 'a', ь: 'y', ю: 'yu', я: 'ya',
+};
+function translit(str) {
+  return String(str ?? '').toLowerCase().split('').map((c) => (TRANSLIT[c] ?? c)).join('').replace(/[^a-z0-9]/g, '');
+}
+
+const bulkBtn = document.getElementById('bulk-create-btn');
+const bulkNamesEl = document.getElementById('bulk-names');
+const bulkRoleEl = document.getElementById('bulk-role');
+const bulkMsgEl = document.getElementById('bulk-msg');
+const bulkResultsWrap = document.getElementById('bulk-results-wrap');
+const bulkResultsEl = document.getElementById('bulk-results');
+
+function bulkShow(text, cls = 'text-muted') {
+  if (bulkMsgEl) { bulkMsgEl.textContent = text; bulkMsgEl.className = `small mb-0 mt-2 ${cls}`; }
+}
+
+bulkBtn?.addEventListener('click', async () => {
+  const role = bulkRoleEl.value;
+  const lines = bulkNamesEl.value.split('\n').map((l) => l.trim()).filter(Boolean);
+  if (!lines.length) { bulkShow('Постави поне едно име.', 'text-danger'); return; }
+
+  bulkBtn.disabled = true;
+  bulkResultsEl.innerHTML = '';
+  bulkResultsWrap.classList.remove('hidden');
+  let ok = 0; let fail = 0;
+
+  for (const line of lines) {
+    const parts = line.split(/\s+/);
+    const first = parts[0] || '';
+    const surname = parts[parts.length - 1] || first;
+    const fp = translit(first) || 'x';
+    const sp = translit(surname) || 'x';
+    const email = `${fp}.${sp}@elitelingua.com`;
+    const password = `${fp.charAt(0).toUpperCase()}${sp.charAt(0)}123456!`;
+
+    bulkShow(`Създаваме… ${line}`);
+    let status;
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: { full_name: line, email, role, password },
+      });
+      if (error || !data?.ok) { status = `<span class="text-danger">${escapeHtml(data?.error || error?.message || 'грешка')}</span>`; fail += 1; } else { status = '<span class="text-success">създаден ✓</span>'; ok += 1; }
+    } catch (e) {
+      status = `<span class="text-danger">${escapeHtml(e.message)}</span>`; fail += 1;
+    }
+    bulkResultsEl.insertAdjacentHTML('beforeend',
+      `<tr><td>${escapeHtml(line)}</td><td>${escapeHtml(email)}</td><td><code>${escapeHtml(password)}</code></td><td>${status}</td></tr>`);
+  }
+
+  bulkShow(`Готово: ${ok} създадени, ${fail} грешки. Копирай таблицата и раздай паролите.`, fail ? 'text-warning' : 'text-success');
+  bulkBtn.disabled = false;
+  await loadUsers();
+});
+
 async function logout() {
   await supabase.auth.signOut();
   window.location.href = 'login.html';
