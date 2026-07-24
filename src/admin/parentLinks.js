@@ -562,6 +562,121 @@ bulkBtn?.addEventListener('click', async () => {
   await loadUsers();
 });
 
+// --- Class import: students + parents + enrolment + parent links ---
+const importGroupEl = document.getElementById('import-group');
+const importRowsEl = document.getElementById('import-rows');
+const importBtn = document.getElementById('import-btn');
+const importMsgEl = document.getElementById('import-msg');
+const importResultsWrap = document.getElementById('import-results-wrap');
+const importResultsEl = document.getElementById('import-results');
+
+function importShow(text, cls = 'text-muted') {
+  if (importMsgEl) { importMsgEl.textContent = text; importMsgEl.className = `small mb-0 mt-2 ${cls}`; }
+}
+
+async function loadImportGroups() {
+  if (!importGroupEl) return;
+  const { data } = await supabase.from('groups').select('id, name').order('name');
+  importGroupEl.innerHTML = '<option value="">Избери група…</option>'
+    + (data || []).map((g) => `<option value="${escapeHtml(g.id)}">${escapeHtml(g.name)}</option>`).join('');
+}
+
+function genCreds(fullName) {
+  const parts = String(fullName).split(/\s+/).filter(Boolean);
+  const first = parts[0] || '';
+  const surname = parts[parts.length - 1] || first;
+  const fp = translit(first) || 'x';
+  const sp = translit(surname) || 'x';
+  return { email: `${fp}.${sp}@elitelingua.com`, password: `${fp.charAt(0).toUpperCase()}${sp.charAt(0)}123456!` };
+}
+
+// Create the account, or fall back to the existing profile so we can still
+// enrol/link (handles shared parents and re-runs).
+async function ensureUser(fullName, role, phone) {
+  const { email, password } = genCreds(fullName);
+  const { data, error } = await supabase.functions.invoke('admin-create-user', {
+    body: { full_name: fullName, email, role, phone: phone || null, password },
+  });
+  if (!error && data?.ok) return { id: data.id, email, password, created: true };
+
+  // Already exists (or failed) — try to find the profile by name + role.
+  const { data: existing } = await supabase
+    .from('profiles').select('id').eq('full_name', fullName).eq('role', role).limit(1).maybeSingle();
+  if (existing?.id) return { id: existing.id, email, password: '(съществуващ)', created: false };
+
+  return { error: data?.error || error?.message || 'неуспешно създаване', email, password };
+}
+
+async function insertIgnore(table, row) {
+  const { error } = await supabase.from(table).insert(row);
+  if (error && !/duplicate|unique/i.test(error.message)) return error.message;
+  return null;
+}
+
+importBtn?.addEventListener('click', async () => {
+  const groupId = importGroupEl.value;
+  if (!groupId) { importShow('Избери група.', 'text-danger'); return; }
+  const lines = importRowsEl.value.split('\n').map((l) => l.trim()).filter(Boolean);
+  if (!lines.length) { importShow('Постави поне един ред.', 'text-danger'); return; }
+
+  importBtn.disabled = true;
+  importResultsEl.innerHTML = '';
+  importResultsWrap.classList.remove('hidden');
+  const parentCache = new Map();
+  let ok = 0; let fail = 0;
+
+  for (const line of lines) {
+    const [studentPart, parentPart, phonePart] = line.split('|').map((s) => (s || '').trim());
+    if (!studentPart) continue;
+
+    importShow(`Обработваме… ${studentPart}`);
+    const notes = [];
+
+    // Student
+    const st = await ensureUser(studentPart, 'student', null);
+    let parent = null;
+
+    if (st.id) {
+      const enrErr = await insertIgnore('group_students', { group_id: groupId, student_id: st.id });
+      if (enrErr) notes.push(`запис: ${enrErr}`);
+
+      // Parent (dedup shared parents within this run)
+      if (parentPart) {
+        const key = translit(parentPart);
+        if (parentCache.has(key)) {
+          parent = parentCache.get(key);
+        } else {
+          parent = await ensureUser(parentPart, 'parent', phonePart);
+          if (parent.id) parentCache.set(key, parent);
+        }
+        if (parent?.id) {
+          const linkErr = await insertIgnore('parent_students', { parent_id: parent.id, student_id: st.id });
+          if (linkErr) notes.push(`връзка: ${linkErr}`);
+        } else {
+          notes.push(`родител: ${parent?.error || 'грешка'}`);
+        }
+      }
+    } else {
+      notes.push(`ученик: ${st.error}`);
+    }
+
+    const good = st.id && (!parentPart || parent?.id);
+    if (good) ok += 1; else fail += 1;
+
+    const stCreds = st.id ? `${escapeHtml(st.email)}<br><code>${escapeHtml(st.password)}</code>` : '—';
+    const pCreds = parent?.id ? `${escapeHtml(parent.email)}<br><code>${escapeHtml(parent.password)}</code>` : '—';
+    const statusHtml = notes.length
+      ? `<span class="text-warning">${escapeHtml(notes.join('; '))}</span>`
+      : '<span class="text-success">✓</span>';
+    importResultsEl.insertAdjacentHTML('beforeend',
+      `<tr><td>${escapeHtml(studentPart)}</td><td>${stCreds}</td><td>${escapeHtml(parentPart || '—')}</td><td>${pCreds}</td><td>${statusHtml}</td></tr>`);
+  }
+
+  importShow(`Готово: ${ok} успешни, ${fail} с проблем. Копирай таблицата и раздай паролите.`, fail ? 'text-warning' : 'text-success');
+  importBtn.disabled = false;
+  await loadUsers();
+});
+
 async function logout() {
   await supabase.auth.signOut();
   window.location.href = 'login.html';
@@ -580,4 +695,5 @@ navLogoutBtn?.addEventListener('click', logout);
   await loadLinks();
   await loadInvites();
   await loadUsers();
+  await loadImportGroups();
 })();
