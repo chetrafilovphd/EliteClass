@@ -3,15 +3,21 @@
 // temporary password, pre-confirmed email, and a matching profile row.
 // Uses the service_role key (auto-injected) which must never touch the browser.
 //
-// Deploy: Supabase Dashboard -> Edge Functions -> Deploy a new function
-//   name: admin-create-user   (paste this file's contents)
+// Deploy: Supabase Dashboard -> Edge Functions -> admin-create-user -> edit -> Deploy
 // No extra secrets needed — SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are
-// provided automatically.
+// provided automatically. (Optional: SUPABASE_JWT_SECRET enables legacy HS256
+// fallback verification.)
+//
+// Caller identity is verified LOCALLY against the project's JWKS (asymmetric
+// ES256/ECC signing keys). This is robust to JWT signing-key rotation, unlike
+// calling auth.getUser() which failed after the HS256 -> ES256 migration with
+// "unrecognized JWT kid <nil> for algorithm ES256".
 //
 // Returns HTTP 200 with { ok: boolean, error?: string, ... } for all expected
 // outcomes so the browser client can read the message directly.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { jwtVerify, createRemoteJWKSet } from 'https://esm.sh/jose@5';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,27 +34,52 @@ function json(obj: unknown, status = 200): Response {
 
 const ALLOWED_ROLES = ['admin', 'teacher', 'student', 'parent'];
 
+const PROJECT_URL = Deno.env.get('SUPABASE_URL')!;
+// Public JWKS with the project's asymmetric (ES256/ECC) verification keys.
+const JWKS = createRemoteJWKSet(new URL(`${PROJECT_URL}/auth/v1/.well-known/jwks.json`));
+
+// Verify the caller's access token and return their user id, or null.
+async function getCallerId(jwt: string): Promise<string | null> {
+  // 1. Asymmetric verification via JWKS (current ES256/ECC signing key).
+  try {
+    const { payload } = await jwtVerify(jwt, JWKS);
+    if (payload.sub) return String(payload.sub);
+  } catch (_e) {
+    // fall through to legacy secret
+  }
+  // 2. Legacy HS256 shared-secret fallback (older still-valid tokens).
+  const legacy = Deno.env.get('SUPABASE_JWT_SECRET');
+  if (legacy) {
+    try {
+      const { payload } = await jwtVerify(jwt, new TextEncoder().encode(legacy));
+      if (payload.sub) return String(payload.sub);
+    } catch (_e) {
+      // ignore
+    }
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ ok: false, error: 'Method not allowed' });
 
   try {
-    const url = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const admin = createClient(url, serviceKey);
+    const admin = createClient(PROJECT_URL, serviceKey);
 
-    // Identify the caller from their JWT.
-    const jwt = (req.headers.get('Authorization') || '').replace('Bearer ', '');
+    // Identify the caller from their JWT (verified locally against the JWKS).
+    const jwt = (req.headers.get('Authorization') || '').replace('Bearer ', '').trim();
     if (!jwt) return json({ ok: false, error: 'Липсва оторизация.' });
 
-    const { data: caller, error: callerErr } = await admin.auth.getUser(jwt);
-    if (callerErr || !caller?.user) return json({ ok: false, error: 'Невалидна сесия.' });
+    const callerId = await getCallerId(jwt);
+    if (!callerId) return json({ ok: false, error: 'Невалидна сесия.' });
 
     // Only admins may create accounts.
     const { data: callerProfile } = await admin
       .from('profiles')
       .select('role')
-      .eq('id', caller.user.id)
+      .eq('id', callerId)
       .single();
     if (callerProfile?.role !== 'admin') {
       return json({ ok: false, error: 'Само администратор може да създава акаунти.' });
