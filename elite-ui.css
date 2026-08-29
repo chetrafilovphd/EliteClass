@@ -718,6 +718,16 @@ main a:not(.btn):not(.nav-link):not(.navbar-brand):not(.elite-quick-card):hover 
 
 .elite-side-links { display: flex; flex-direction: column; gap: 0.2rem; flex: 1 0 auto; }
 
+.elite-nav-label {
+  color: #6f83a8;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 0.85rem 0.7rem 0.3rem;
+}
+.elite-side-links > .elite-nav-label:first-child { padding-top: 0.3rem; }
+
 .elite-side-link {
   display: flex;
   align-items: center;
@@ -821,4 +831,40 @@ main a:not(.btn):not(.nav-link):not(.navbar-brand):not(.elite-quick-card):hover 
 }
 .elite-quick-title {
   font-size: 1rem;
+}
+
+/* ============================================================
+   Dashboard v2 — shkolo-style "Днес" + weekly schedule cards
+   ============================================================ */
+.elite-daycard { border: 1px solid #e3e8f3; border-radius: 0.9rem; background: #fff; overflow: hidden; }
+.elite-daycard-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.8rem 1rem; border-bottom: 1px solid #eef1f7;
+}
+.elite-daycard-title { font-family: var(--elite-font-heading); font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+.elite-daycard-title i { color: var(--elite-gold); }
+.elite-daycard-body { padding: 0.4rem 1rem 0.9rem; }
+
+.elite-lesson-row { display: flex; align-items: center; gap: 0.8rem; padding: 0.7rem 0; border-bottom: 1px solid #eef1f7; }
+.elite-lesson-row:last-child { border-bottom: none; }
+.elite-lesson-time { font-family: var(--elite-font-heading); font-weight: 800; font-size: 0.9rem; text-align: center; min-width: 3.1rem; line-height: 1.1; }
+.elite-lesson-time small { display: block; font-family: var(--elite-font-body); font-weight: 500; font-size: 0.7rem; color: #94a3b8; }
+.elite-lesson-bar { width: 4px; align-self: stretch; border-radius: 4px; background: var(--elite-gold); }
+.elite-lesson-main { flex: 1 1 auto; min-width: 0; }
+.elite-lesson-grp { font-weight: 700; }
+.elite-lesson-meta { color: #64748b; font-size: 0.82rem; }
+.elite-lesson-row.is-now { background: linear-gradient(90deg, rgba(212,175,55,0.14), transparent); margin: 0 -1rem; padding-left: 1rem; padding-right: 1rem; }
+.elite-now-chip { background: #dcfce7; color: #166534; font-weight: 700; font-size: 0.68rem; padding: 0.12rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+
+.elite-week-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
+.elite-week-day { text-align: center; }
+.elite-week-dayname { font-size: 0.68rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem; }
+.elite-week-slot { background: #f6f9fd; border: 1px solid #e3e8f3; border-left: 3px solid var(--elite-navy-2); border-radius: 0.5rem; padding: 0.35rem 0.25rem; margin-bottom: 0.35rem; font-size: 0.68rem; font-weight: 600; line-height: 1.15; }
+.elite-week-slot small { display: block; color: #94a3b8; font-weight: 500; font-size: 0.62rem; }
+.elite-week-slot.is-today { border-left-color: var(--elite-gold); background: rgba(212,175,55,0.1); }
+
+@media (max-width: 480px) {
+  .elite-week-grid { grid-template-columns: 1fr; gap: 0.3rem; }
+  .elite-week-day { display: grid; grid-template-columns: 3.2rem 1fr; align-items: start; text-align: left; gap: 0.4rem; }
+  .elite-week-dayname { margin: 0.35rem 0 0; }
 }

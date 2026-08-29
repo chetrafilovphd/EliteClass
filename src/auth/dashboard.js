@@ -286,46 +286,70 @@ async function loadExtendedProfileFields(userId) {
   }
 }
 
-async function loadTeacherWeekSchedule(profile) {
-  if (!teacherScheduleSectionEl || !weekScheduleBodyEl) return;
+// Superseded by the "Днес" + "Тази седмица" cards (loadTodaySchedule).
+async function loadTeacherWeekSchedule() {
+  teacherScheduleSectionEl?.classList.add('hidden');
+}
 
-  if (profile.role !== 'teacher') {
-    teacherScheduleSectionEl.classList.add('hidden');
-    return;
-  }
+const DOW_SHORT = ['', 'Пон', 'Вт', 'Ср', 'Чет', 'Пет', 'Съб', 'Нед'];
+const DOW_LONG = ['', 'Понеделник', 'Вторник', 'Сряда', 'Четвъртък', 'Петък', 'Събота', 'Неделя'];
+const isoDow = (d) => { const x = d.getDay(); return x === 0 ? 7 : x; };
+const hhmm = (t) => String(t || '').slice(0, 5);
+const toMin = (t) => { const [h, m] = hhmm(t).split(':').map(Number); return (h || 0) * 60 + (m || 0); };
 
-  teacherScheduleSectionEl.classList.remove('hidden');
-
-  const today = new Date();
-  const fromDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const toDate = new Date(fromDate);
-  toDate.setDate(toDate.getDate() + 7);
-
-  const fromIso = fromDate.toISOString().slice(0, 10);
-  const toIso = toDate.toISOString().slice(0, 10);
+// "Днес" + weekly schedule cards, driven by the recurring schedule_slots of the
+// groups the current user teaches. Shown for teacher/admin; hidden if they teach none.
+async function loadTodaySchedule(profile) {
+  const section = document.getElementById('today-section');
+  const todayBody = document.getElementById('today-lessons');
+  const weekBody = document.getElementById('week-grid');
+  const todayTitle = document.getElementById('today-title');
+  if (!section || !todayBody || !weekBody) return;
+  if (profile.role !== 'teacher' && profile.role !== 'admin') { section.classList.add('hidden'); return; }
 
   const { data, error } = await supabase
-    .from('lessons')
-    .select('id, group_id, lesson_date, topic, groups(name, teacher_id)')
-    .eq('groups.teacher_id', currentSession.user.id)
-    .gte('lesson_date', fromIso)
-    .lte('lesson_date', toIso)
-    .order('lesson_date', { ascending: true });
+    .from('schedule_slots')
+    .select('day_of_week, start_time, end_time, room, group_id, groups!inner(name, teacher_id)')
+    .eq('groups.teacher_id', currentSession.user.id);
 
-  if (error || !data || data.length === 0) {
-    weekScheduleBodyEl.innerHTML = '<tr><td colspan="3">Няма планирани уроци за следващите 7 дни.</td></tr>';
-    return;
+  if (error || !data || data.length === 0) { section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+
+  const now = new Date();
+  const todayDow = isoDow(now);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  if (todayTitle) todayTitle.textContent = `Днес · ${DOW_LONG[todayDow]}`;
+
+  const todays = data.filter((s) => s.day_of_week === todayDow).sort((a, b) => toMin(a.start_time) - toMin(b.start_time));
+  if (todays.length === 0) {
+    todayBody.innerHTML = '<p class="elite-muted small mb-0"><i class="bi bi-cup-hot me-1"></i>Днес нямаш часове.</p>';
+  } else {
+    todayBody.innerHTML = todays.map((s) => {
+      const isNow = nowMin >= toMin(s.start_time) && nowMin < toMin(s.end_time);
+      const room = s.room ? ` · ${escapeHtml(s.room)}` : '';
+      return `<div class="elite-lesson-row${isNow ? ' is-now' : ''}">
+        <div class="elite-lesson-bar"></div>
+        <div class="elite-lesson-time">${escapeHtml(hhmm(s.start_time))}<small>${escapeHtml(hhmm(s.end_time))}</small></div>
+        <div class="elite-lesson-main">
+          <div class="elite-lesson-grp">${escapeHtml(s.groups?.name ?? '-')}</div>
+          <div class="elite-lesson-meta">${escapeHtml(hhmm(s.start_time))}–${escapeHtml(hhmm(s.end_time))}${room}</div>
+        </div>
+        ${isNow ? '<span class="elite-now-chip">Сега</span>' : ''}
+        <a class="btn btn-sm btn-primary" href="my-hours.html">Отвори</a>
+      </div>`;
+    }).join('');
   }
 
-  weekScheduleBodyEl.innerHTML = data
-    .map((row) => `
-      <tr>
-        <td>${escapeHtml(formatBgDate(row.lesson_date))}</td>
-        <td>${escapeHtml(row.groups?.name ?? '-')}</td>
-        <td>${escapeHtml(row.topic ?? '-')}</td>
-      </tr>
-    `)
-    .join('');
+  const byDay = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+  data.forEach((s) => { if (byDay[s.day_of_week]) byDay[s.day_of_week].push(s); });
+  weekBody.innerHTML = `<div class="elite-week-grid">${[1, 2, 3, 4, 5].map((d) => {
+    const isToday = d === todayDow;
+    const slots = byDay[d].sort((a, b) => toMin(a.start_time) - toMin(b.start_time));
+    const cells = slots.length
+      ? slots.map((s) => `<div class="elite-week-slot${isToday ? ' is-today' : ''}">${escapeHtml(s.groups?.name ?? '-')}<small>${escapeHtml(hhmm(s.start_time))}</small></div>`).join('')
+      : '<div class="elite-week-slot" style="opacity:.45">—</div>';
+    return `<div class="elite-week-day"><div class="elite-week-dayname">${DOW_SHORT[d]}</div>${cells}</div>`;
+  }).join('')}</div>`;
 }
 
 async function loadTeacherPanel() {
@@ -642,6 +666,7 @@ async function loadUser() {
   await loadKpis();
   await loadRecentEvents();
   await loadTeacherWeekSchedule(profile);
+  await loadTodaySchedule(profile);
   await loadRolePanels(profile);
 }
 

@@ -2,13 +2,28 @@
 // slide-in drawer on mobile. Injected on every logged-in app page. Role-aware.
 import { supabase } from './supabaseClient.js';
 
-const NAV_ITEMS = [
-  { href: 'dashboard.html', icon: 'bi-house-door', label: 'Табло', roles: '*' },
-  { href: 'groups.html', icon: 'bi-people', label: 'Групи', roles: '*' },
-  { href: 'schedule.html', icon: 'bi-calendar-week', label: 'Разписание', roles: '*' },
-  { href: 'calendar.html', icon: 'bi-calendar-event', label: 'Календар', roles: '*' },
-  { href: 'my-hours.html', icon: 'bi-journal-check', label: 'Моят час', roles: ['teacher', 'admin'] },
-  { href: 'parent-links.html', icon: 'bi-shield-lock', label: 'Администрация', roles: ['admin'] },
+const NAV_SECTIONS = [
+  {
+    label: 'Основно',
+    items: [
+      { href: 'dashboard.html', icon: 'bi-grid-1x2-fill', label: 'Табло', roles: '*' },
+      { href: 'groups.html', icon: 'bi-people-fill', label: 'Групи', roles: '*' },
+      { href: 'schedule.html', icon: 'bi-calendar-week-fill', label: 'Разписание', roles: '*' },
+      { href: 'calendar.html', icon: 'bi-calendar-event-fill', label: 'Календар', roles: '*' },
+    ],
+  },
+  {
+    label: 'Преподаване',
+    items: [
+      { href: 'my-hours.html', icon: 'bi-journal-check', label: 'Моят час', roles: ['teacher', 'admin'] },
+    ],
+  },
+  {
+    label: 'Управление',
+    items: [
+      { href: 'parent-links.html', icon: 'bi-shield-lock-fill', label: 'Администрация', roles: ['admin'] },
+    ],
+  },
 ];
 
 const currentFile = (location.pathname.split('/').pop() || 'dashboard.html').toLowerCase();
@@ -26,7 +41,11 @@ function linkHtml(item) {
 }
 
 function render(role) {
-  const links = NAV_ITEMS.filter((i) => itemVisibleFor(i, role)).map(linkHtml).join('');
+  const links = NAV_SECTIONS.map((section) => {
+    const visible = section.items.filter((i) => itemVisibleFor(i, role));
+    if (visible.length === 0) return '';
+    return `<div class="elite-nav-label">${escapeHtml(section.label)}</div>${visible.map(linkHtml).join('')}`;
+  }).join('');
 
   // Hide the old top navbar if present.
   document.querySelectorAll('.elite-appbar').forEach((n) => { n.style.display = 'none'; });
