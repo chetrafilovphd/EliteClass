@@ -366,13 +366,23 @@ async function loadTeacherPanel() {
   myHoursQuick?.classList.remove('hidden');
 
   const todayIso = new Date().toISOString().slice(0, 10);
-  const { data, error } = await supabase
-    .from('lessons')
-    .select('id, group_id, lesson_date, topic, groups(name, teacher_id)')
-    .eq('groups.teacher_id', currentSession.user.id)
-    .gte('lesson_date', todayIso)
-    .order('lesson_date', { ascending: true })
-    .limit(10);
+  const { data: myGroups } = await supabase.from('groups').select('id, name').eq('teacher_id', currentSession.user.id);
+  const groupIds = (myGroups || []).map((g) => g.id);
+  const nameById = new Map((myGroups || []).map((g) => [g.id, g.name]));
+
+  let data = [];
+  let error = null;
+  if (groupIds.length) {
+    const res = await supabase
+      .from('lessons')
+      .select('id, group_id, lesson_date, topic')
+      .in('group_id', groupIds)
+      .gte('lesson_date', todayIso)
+      .order('lesson_date', { ascending: true })
+      .limit(10);
+    data = res.data || [];
+    error = res.error;
+  }
 
   if (error || !data || data.length === 0) {
     teacherLessonsBodyEl.innerHTML = '<tr><td colspan="4">Няма предстоящи часове.</td></tr>';
@@ -383,7 +393,7 @@ async function loadTeacherPanel() {
     .map((row) => `
       <tr>
         <td>${escapeHtml(formatBgDate(row.lesson_date))}</td>
-        <td>${escapeHtml(row.groups?.name ?? '-')}</td>
+        <td>${escapeHtml(nameById.get(row.group_id) ?? '-')}</td>
         <td>${escapeHtml(row.topic ?? '-')}</td>
         <td><a class="btn btn-sm btn-outline-primary" href="group-details.html?groupId=${encodeURIComponent(row.group_id)}&lessonId=${encodeURIComponent(row.id)}">Отвори урок</a></td>
       </tr>
@@ -673,11 +683,17 @@ async function loadUser() {
   }
 
   await hydrateProfileForm(profile);
-  await loadKpis();
-  await loadRecentEvents();
-  await loadTeacherWeekSchedule(profile);
-  await loadTodaySchedule(profile);
-  await loadRolePanels(profile);
+
+  // Load each dashboard section independently so one slow/failing query can't
+  // block the others (previously a stuck query hid "Днес" and the role panels).
+  const settle = (label, p) => Promise.resolve(p).catch((e) => console.error(`dashboard: ${label} failed`, e));
+  await Promise.all([
+    settle('kpis', loadKpis()),
+    settle('recentEvents', loadRecentEvents()),
+    settle('today', loadTodaySchedule(profile)),
+    settle('rolePanels', loadRolePanels(profile)),
+    settle('teacherWeek', loadTeacherWeekSchedule(profile)),
+  ]);
 }
 
 async function logout() {
