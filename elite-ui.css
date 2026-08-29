@@ -842,6 +842,33 @@ body.has-sidebar .elite-card {
 }
 
 /* ============================================================
+   Dashboard v2 — page head, stat tiles, quick grid (mockup)
+   ============================================================ */
+.dash-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; }
+.dash-hello { font-size: 1.5rem; font-weight: 800; margin: 0; }
+.dash-sub { color: #64748b; font-size: 0.9rem; margin-top: 0.2rem; }
+.dash-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.9rem; margin: 1.1rem 0; }
+.stat { background: #fff; border: 1px solid #e3e8f3; border-radius: 0.9rem; padding: 0.9rem 1rem;
+  box-shadow: 0 1px 2px rgba(11, 31, 59, 0.05), 0 8px 22px rgba(11, 31, 59, 0.06); }
+.stat-ic { width: 2.25rem; height: 2.25rem; border-radius: 0.65rem; display: grid; place-items: center; color: #fff; font-size: 1.05rem; }
+.ic-navy { background: var(--elite-navy); }
+.ic-blue { background: #2f7ec8; }
+.ic-green { background: #22a06b; }
+.ic-amber { background: #c98a1a; }
+.stat-label { color: #64748b; font-size: 0.78rem; font-weight: 600; margin-top: 0.7rem; }
+.stat-value { font-family: var(--elite-font-heading); font-weight: 800; font-size: 1.55rem; line-height: 1.1; }
+
+.quick-grid-2 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
+
+@media (max-width: 900px) {
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  .quick-grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .dash-hello { font-size: 1.3rem; }
+}
+
+/* ============================================================
    Dashboard v2 — shkolo-style "Днес" + weekly schedule cards
    ============================================================ */
 .elite-daycard { border: 1px solid #e3e8f3; border-radius: 0.9rem; background: #fff; overflow: hidden; }

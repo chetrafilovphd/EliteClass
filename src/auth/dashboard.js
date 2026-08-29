@@ -659,6 +659,10 @@ async function loadUser() {
   currentProfile = profile;
 
   nameEl.textContent = profile.full_name || session.user.email;
+  const dashDateEl = document.getElementById('dash-date');
+  if (dashDateEl) {
+    dashDateEl.textContent = new Date().toLocaleDateString('bg-BG', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
   if (roleEl) {
     roleEl.className = `elite-badge-soft ${roleBadgeClass(profile.role)}`;
     roleEl.textContent = roleLabel(profile.role);
