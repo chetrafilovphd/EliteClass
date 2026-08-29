@@ -307,10 +307,18 @@ async function loadTodaySchedule(profile) {
   if (!section || !todayBody || !weekBody) return;
   if (profile.role !== 'teacher' && profile.role !== 'admin') { section.classList.add('hidden'); return; }
 
+  // Groups the current user teaches, then their recurring slots (two simple
+  // queries — avoids embedded-filter quirks and works under RLS).
+  const { data: myGroups } = await supabase
+    .from('groups').select('id, name').eq('teacher_id', currentSession.user.id);
+  const groupIds = (myGroups || []).map((g) => g.id);
+  if (groupIds.length === 0) { section.classList.add('hidden'); return; }
+  const nameById = new Map((myGroups || []).map((g) => [g.id, g.name]));
+
   const { data, error } = await supabase
     .from('schedule_slots')
-    .select('day_of_week, start_time, end_time, room, group_id, groups!inner(name, teacher_id)')
-    .eq('groups.teacher_id', currentSession.user.id);
+    .select('day_of_week, start_time, end_time, room, group_id')
+    .in('group_id', groupIds);
 
   if (error || !data || data.length === 0) { section.classList.add('hidden'); return; }
   section.classList.remove('hidden');
@@ -331,7 +339,7 @@ async function loadTodaySchedule(profile) {
         <div class="elite-lesson-bar"></div>
         <div class="elite-lesson-time">${escapeHtml(hhmm(s.start_time))}<small>${escapeHtml(hhmm(s.end_time))}</small></div>
         <div class="elite-lesson-main">
-          <div class="elite-lesson-grp">${escapeHtml(s.groups?.name ?? '-')}</div>
+          <div class="elite-lesson-grp">${escapeHtml(nameById.get(s.group_id) ?? '-')}</div>
           <div class="elite-lesson-meta">${escapeHtml(hhmm(s.start_time))}–${escapeHtml(hhmm(s.end_time))}${room}</div>
         </div>
         ${isNow ? '<span class="elite-now-chip">Сега</span>' : ''}
@@ -346,7 +354,7 @@ async function loadTodaySchedule(profile) {
     const isToday = d === todayDow;
     const slots = byDay[d].sort((a, b) => toMin(a.start_time) - toMin(b.start_time));
     const cells = slots.length
-      ? slots.map((s) => `<div class="elite-week-slot${isToday ? ' is-today' : ''}">${escapeHtml(s.groups?.name ?? '-')}<small>${escapeHtml(hhmm(s.start_time))}</small></div>`).join('')
+      ? slots.map((s) => `<div class="elite-week-slot${isToday ? ' is-today' : ''}">${escapeHtml(nameById.get(s.group_id) ?? '-')}<small>${escapeHtml(hhmm(s.start_time))}</small></div>`).join('')
       : '<div class="elite-week-slot" style="opacity:.45">—</div>';
     return `<div class="elite-week-day"><div class="elite-week-dayname">${DOW_SHORT[d]}</div>${cells}</div>`;
   }).join('')}</div>`;
