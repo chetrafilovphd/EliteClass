@@ -97,12 +97,27 @@ Deno.serve(async (req) => {
     if (password.length < 8) return json({ ok: false, error: 'Паролата трябва да е поне 8 символа.' });
 
     // Create the auth user (email pre-confirmed so they can log in immediately).
-    const { data: created, error: createErr } = await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { role, full_name: fullName },
-    });
+    // Retry on transient GoTrue JWT-verification hiccups: after the HS256 -> ES256
+    // signing-key rotation, GoTrue intermittently rejects the service_role key with
+    // "unrecognized JWT kid <nil> for algorithm ES256". Most calls succeed, so a few
+    // retries with backoff make account creation reliable. "already registered" is
+    // terminal (the client falls back to a profile lookup by email).
+    let created = null;
+    let createErr = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const res = await admin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { role, full_name: fullName },
+      });
+      created = res.data;
+      createErr = res.error;
+      if (!createErr && created?.user) break;
+      const m = (createErr?.message || '').toLowerCase();
+      if (m.includes('already') || m.includes('registered') || m.includes('exists')) break;
+      await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+    }
     if (createErr || !created?.user) {
       return json({ ok: false, error: createErr?.message || 'Неуспешно създаване на акаунт.' });
     }
