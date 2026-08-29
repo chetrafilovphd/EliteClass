@@ -94,20 +94,31 @@ async function loadSlotsForDate() {
   const dateStr = dateInput.value || todayIso();
   const wd = isoWeekday(dateStr);
 
-  let q = supabase
-    .from('schedule_slots')
-    .select('id, group_id, day_of_week, start_time, end_time, room, groups!inner(name, teacher_id)')
-    .eq('day_of_week', wd)
-    .order('start_time');
+  // Teacher sees only their own groups' slots (groups fetched first — avoids the
+  // embedded-filter that returned empty); admin sees all groups' slots.
+  let groupIds = null;
+  if (currentRole === 'teacher') {
+    const { data: myGroups } = await supabase.from('groups').select('id').eq('teacher_id', currentUser.id);
+    groupIds = (myGroups || []).map((g) => g.id);
+  }
 
-  if (currentRole === 'teacher') q = q.eq('groups.teacher_id', currentUser.id);
-
-  const { data, error } = await q;
-  if (error) {
-    showMessage(`Грешка при разписанието: ${error.message}`);
+  if (groupIds && groupIds.length === 0) {
     slots = [];
   } else {
-    slots = data || [];
+    let q = supabase
+      .from('schedule_slots')
+      .select('id, group_id, day_of_week, start_time, end_time, room, groups(name)')
+      .eq('day_of_week', wd)
+      .order('start_time');
+    if (groupIds) q = q.in('group_id', groupIds);
+
+    const { data, error } = await q;
+    if (error) {
+      showMessage(`Грешка при разписанието: ${error.message}`);
+      slots = [];
+    } else {
+      slots = data || [];
+    }
   }
 
   if (slots.length === 0) {
