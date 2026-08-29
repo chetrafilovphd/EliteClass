@@ -519,7 +519,9 @@ async function loadParentPanel() {
 
 async function loadRolePanels(profile) {
   hideRolePanels();
-  if (profile.role === 'teacher') {
+  // Admin is a superset of teacher: an admin who also teaches groups (e.g. a
+  // teaching head) sees the teacher panel too.
+  if (profile.role === 'teacher' || profile.role === 'admin') {
     await loadTeacherPanel();
   } else if (profile.role === 'student') {
     await loadStudentPanel();
