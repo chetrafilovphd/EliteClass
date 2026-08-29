@@ -126,6 +126,7 @@ async function loadSlotsForDate() {
     slotHintEl.textContent = 'В този ден нямаш часове по разписание. Разписанието се прави от администратора.';
     lessonSection.classList.add('hidden');
     emptyState.classList.remove('hidden');
+    document.getElementById('mh-savebar')?.classList.add('hidden');
     return;
   }
 
@@ -140,6 +141,7 @@ async function loadLessonScreen() {
   if (idx === '') {
     lessonSection.classList.add('hidden');
     emptyState.classList.remove('hidden');
+    document.getElementById('mh-savebar')?.classList.add('hidden');
     return;
   }
 
@@ -198,9 +200,16 @@ async function loadLessonScreen() {
   showMessage('');
 }
 
+function studentInitials(name) {
+  const p = String(name || '').trim().split(/\s+/).filter(Boolean);
+  return ((p[0]?.[0] || '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase() || '•';
+}
+
 function renderStudents() {
   if (students.length === 0) {
-    studentsListEl.innerHTML = '<div class="elite-empty py-3"><i class="bi bi-inbox"></i>В тази група още няма записани ученици. Администраторът ги записва.</div>';
+    studentsListEl.innerHTML = '<div class="elite-daycard"><div class="elite-daycard-body text-center text-muted py-3"><i class="bi bi-inbox me-1"></i>В тази група още няма записани ученици.</div></div>';
+    document.getElementById('mh-savebar')?.classList.remove('hidden');
+    updateProgress();
     return;
   }
 
@@ -209,39 +218,38 @@ function renderStudents() {
       .map((g) => `<span title="${escapeHtml(g.title || '')}">${percentBadge(g.percentage)}</span>`).join(' ');
     const sid = escapeHtml(s.student_id);
     const absCount = absenceCountByStudent.get(s.student_id) || 0;
-    const absChip = absCount
-      ? `<span class="badge text-bg-secondary" title="Натрупани отсъствия"><i class="bi bi-calendar-x me-1"></i>${absCount}</span>`
-      : '';
     return `
-      <div class="card border mb-2">
-        <div class="card-body p-3">
-          <div class="d-flex justify-content-between align-items-center gap-2 mb-2 flex-wrap">
-            <div class="fw-semibold"><i class="bi bi-person-circle me-1 text-secondary"></i>${escapeHtml(s.full_name)}</div>
-            <div class="d-flex align-items-center gap-2">
-              ${absChip}
-              <button class="btn btn-sm btn-outline-danger js-absent" data-id="${sid}" type="button"><i class="bi bi-calendar-x me-1"></i>Отсъства</button>
+      <div class="mh-student" data-sid="${sid}">
+        <div class="mh-student-head">
+          <div class="mh-student-name">
+            <span class="mh-avatar">${escapeHtml(studentInitials(s.full_name))}</span>
+            <div>
+              <div class="mh-name">${escapeHtml(s.full_name)}</div>
+              <div class="mh-recent">${recent || '<span class="elite-muted small">няма оценки още</span>'}</div>
             </div>
           </div>
-          <div class="mb-2 d-flex flex-wrap gap-1">${recent || '<span class="elite-muted small">няма резултати</span>'}</div>
-          <div class="row g-2 align-items-end">
-            <div class="col-5 col-md-3">
-              <label class="form-label small mb-1">Резултат %</label>
-              <input class="form-control js-pct" data-id="${sid}" type="number" min="0" max="100" placeholder="—" />
+          <button class="mh-abs js-absent" data-id="${sid}" type="button">
+            <i class="bi bi-calendar-x"></i><span class="js-abs-label">Отсъства${absCount ? ` · ${absCount}` : ''}</span>
+          </button>
+        </div>
+        <div class="mh-student-body">
+          <div class="mh-field">
+            <label>Резултат %</label>
+            <input class="form-control js-pct mh-pct" data-id="${sid}" type="number" min="0" max="100" inputmode="numeric" placeholder="—" />
+          </div>
+          <div class="mh-field">
+            <label>Тип</label>
+            <select class="form-select js-type" data-id="${sid}">${typeOptions('Тест')}</select>
+          </div>
+          <div class="mh-field mh-feedback">
+            <label>Отзив</label>
+            <div class="mh-toggle-row">
+              <button class="mh-pill mh-pill-praise js-praise" data-id="${sid}" type="button"><i class="bi bi-emoji-smile"></i>Похвала</button>
+              <button class="mh-pill mh-pill-remark js-remark" data-id="${sid}" type="button"><i class="bi bi-exclamation-triangle"></i>Забележка</button>
             </div>
-            <div class="col-7 col-md-4">
-              <label class="form-label small mb-1">Тип</label>
-              <select class="form-select js-type" data-id="${sid}">${typeOptions('Тест')}</select>
-            </div>
-            <div class="col-12 col-md-5">
-              <label class="form-label small mb-1">Отзив</label>
-              <div class="d-flex gap-1">
-                <button class="btn btn-sm btn-outline-success flex-fill js-praise" data-id="${sid}" type="button"><i class="bi bi-emoji-smile me-1"></i>Похвала</button>
-                <button class="btn btn-sm btn-outline-warning flex-fill js-remark" data-id="${sid}" type="button"><i class="bi bi-exclamation-triangle me-1"></i>Забележка</button>
-              </div>
-            </div>
-            <div class="col-12 js-note-wrap hidden" data-id="${sid}">
-              <input class="form-control form-control-sm js-note" data-id="${sid}" placeholder="Текст на отзива…" />
-            </div>
+          </div>
+          <div class="mh-note js-note-wrap hidden" data-id="${sid}">
+            <input class="form-control form-control-sm js-note" data-id="${sid}" placeholder="Текст на отзива…" />
           </div>
         </div>
       </div>`;
@@ -250,31 +258,55 @@ function renderStudents() {
   studentsListEl.querySelectorAll('.js-praise').forEach((b) => b.addEventListener('click', () => toggleRemark(b.dataset.id, 'praise')));
   studentsListEl.querySelectorAll('.js-remark').forEach((b) => b.addEventListener('click', () => toggleRemark(b.dataset.id, 'remark')));
   studentsListEl.querySelectorAll('.js-absent').forEach((b) => b.addEventListener('click', () => toggleAbsent(b.dataset.id)));
+  studentsListEl.querySelectorAll('.js-pct').forEach((el) => el.addEventListener('input', () => { colorPct(el); updateProgress(); }));
+
+  document.getElementById('mh-savebar')?.classList.remove('hidden');
+  updateProgress();
+}
+
+// Colour the % input by band as the teacher types, and mark the card as graded.
+function colorPct(el) {
+  el.classList.remove('pct-good', 'pct-mid', 'pct-low');
+  const v = el.value === '' ? null : Number(el.value);
+  const card = el.closest('.mh-student');
+  card?.classList.toggle('is-graded', v !== null && Number.isFinite(v));
+  if (v === null || !Number.isFinite(v)) return;
+  if (v >= 85) el.classList.add('pct-good');
+  else if (v >= 60) el.classList.add('pct-mid');
+  else el.classList.add('pct-low');
+}
+
+// "Оценени X / Y" progress chip.
+function updateProgress() {
+  const prog = document.getElementById('mh-progress');
+  if (!prog) return;
+  const total = students.length;
+  let graded = 0;
+  studentsListEl.querySelectorAll('.js-pct').forEach((el) => { if (el.value !== '') graded += 1; });
+  prog.textContent = `Оценени ${graded} / ${total}`;
+  prog.classList.toggle('done', total > 0 && graded === total);
 }
 
 function toggleAbsent(sid) {
   const next = !absentState.get(sid);
   absentState.set(sid, next);
   const btn = studentsListEl.querySelector(`.js-absent[data-id="${CSS.escape(sid)}"]`);
-  btn?.classList.toggle('btn-danger', next);
-  btn?.classList.toggle('btn-outline-danger', !next);
-  if (btn) btn.innerHTML = `<i class="bi bi-calendar-x me-1"></i>Отсъства${next ? ' ✓' : ''}`;
+  btn?.classList.toggle('is-active', next);
+  studentsListEl.querySelector(`.mh-student[data-sid="${CSS.escape(sid)}"]`)?.classList.toggle('is-absent', next);
+  const label = btn?.querySelector('.js-abs-label');
+  if (label) {
+    const base = absenceCountByStudent.get(sid) || 0;
+    label.textContent = next ? 'Отсъства ✓' : `Отсъства${base ? ` · ${base}` : ''}`;
+  }
 }
 
 function toggleRemark(sid, kind) {
   const next = remarkState.get(sid) === kind ? null : kind;
   remarkState.set(sid, next);
-
   const q = (cls) => studentsListEl.querySelector(`${cls}[data-id="${CSS.escape(sid)}"]`);
-  const praiseBtn = q('.js-praise');
-  const remarkBtn = q('.js-remark');
-  const noteWrap = q('.js-note-wrap');
-
-  praiseBtn?.classList.toggle('btn-success', next === 'praise');
-  praiseBtn?.classList.toggle('btn-outline-success', next !== 'praise');
-  remarkBtn?.classList.toggle('btn-warning', next === 'remark');
-  remarkBtn?.classList.toggle('btn-outline-warning', next !== 'remark');
-  noteWrap?.classList.toggle('hidden', !next);
+  q('.js-praise')?.classList.toggle('is-active', next === 'praise');
+  q('.js-remark')?.classList.toggle('is-active', next === 'remark');
+  q('.js-note-wrap')?.classList.toggle('hidden', !next);
 }
 
 bulkApplyBtn?.addEventListener('click', () => {

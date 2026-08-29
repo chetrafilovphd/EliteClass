@@ -15,95 +15,93 @@
   </head>
   <body class="elite-bg">
     <main class="container elite-shell">
-      <section class="card elite-card">
-        <div class="card-body p-3 p-md-4">
-
-          <!-- Header: title + date + save -->
-          <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2 mb-3">
-            <div>
-              <h1 class="h4 mb-1"><i class="bi bi-journal-check me-2"></i>Моят час</h1>
-              <p class="elite-muted mb-0 small" id="teacher-name">...</p>
-            </div>
-            <div class="d-flex gap-2 align-items-center">
-              <input id="lesson-date" class="form-control" type="date" style="max-width: 11rem;" />
-              <button class="btn btn-primary" id="save-all-btn" type="button">
-                <i class="bi bi-check2-circle me-1"></i>Запази промените
-              </button>
-            </div>
-          </div>
-
-          <p class="msg small mb-3" id="msg"></p>
-
-          <!-- Lesson picker: the teacher's scheduled slots for the chosen day -->
-          <div class="card border-0 bg-light mb-3">
-            <div class="card-body">
-              <label class="form-label fw-semibold" for="slot-select">
-                <i class="bi bi-clock-history me-1"></i>Мой час за деня
-              </label>
-              <select id="slot-select" class="form-select"></select>
-              <div class="form-text" id="slot-hint">Часовете идват от седмичното разписание, направено от администратора.</div>
-            </div>
-          </div>
-
-          <!-- Lesson content: topic + homework -->
-          <div id="lesson-section" class="hidden">
-            <div class="card border-0 bg-light mb-3">
-              <div class="card-body">
-                <div class="row g-3">
-                  <div class="col-12 col-lg-6">
-                    <label class="form-label fw-semibold" for="lesson-topic"><i class="bi bi-bookmark-star me-1"></i>Тема на урока</label>
-                    <input id="lesson-topic" class="form-control" placeholder="напр. Present Perfect — упражнения" />
-                  </div>
-                  <div class="col-12 col-lg-4">
-                    <label class="form-label fw-semibold" for="homework-title"><i class="bi bi-house-check me-1"></i>Домашна работа</label>
-                    <input id="homework-title" class="form-control" placeholder="напр. Стр. 24, зад. 1–5" />
-                  </div>
-                  <div class="col-12 col-lg-2">
-                    <label class="form-label fw-semibold" for="homework-due">Срок</label>
-                    <input id="homework-due" class="form-control" type="date" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Bulk apply -->
-            <div class="card border-0 bg-light mb-3">
-              <div class="card-body">
-                <div class="row g-2 align-items-end">
-                  <div class="col-12 col-md-4">
-                    <label class="form-label fw-semibold" for="bulk-type">Тип оценяване (за всички)</label>
-                    <select id="bulk-type" class="form-select"></select>
-                  </div>
-                  <div class="col-6 col-md-3">
-                    <label class="form-label fw-semibold" for="bulk-percent">Резултат %</label>
-                    <input id="bulk-percent" class="form-control" type="number" min="0" max="100" placeholder="0–100" />
-                  </div>
-                  <div class="col-6 col-md-5 d-grid">
-                    <button class="btn btn-outline-primary" id="bulk-apply" type="button">
-                      <i class="bi bi-lightning-charge me-1"></i>Приложи на всички
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <h2 class="h6 mb-2"><i class="bi bi-people me-1"></i>Ученици в групата</h2>
-            <div id="students-list"></div>
-          </div>
-
-          <div id="empty-state" class="elite-empty py-4">
-            <i class="bi bi-inbox"></i>Избери дата и час, за да въведеш резултати.
-          </div>
-
+      <!-- Page head -->
+      <div class="dash-head">
+        <div>
+          <h1 class="dash-hello"><i class="bi bi-journal-check me-2"></i>Моят час</h1>
+          <div class="dash-sub" id="teacher-name">...</div>
         </div>
-      </section>
+        <div class="dash-actions">
+          <input id="lesson-date" class="form-control" type="date" style="max-width: 12rem;" />
+        </div>
+      </div>
+
+      <p class="msg small mb-0 mt-2" id="msg"></p>
+
+      <!-- Lesson picker -->
+      <div class="elite-daycard mt-3">
+        <div class="elite-daycard-body">
+          <label class="form-label fw-semibold" for="slot-select"><i class="bi bi-clock-history me-1 text-warning"></i>Мой час за деня</label>
+          <select id="slot-select" class="form-select form-select-lg"></select>
+          <div class="form-text" id="slot-hint">Часовете идват от седмичното разписание, направено от администратора.</div>
+        </div>
+      </div>
+
+      <!-- Lesson content -->
+      <div id="lesson-section" class="hidden">
+        <div class="elite-daycard mt-3">
+          <div class="elite-daycard-body">
+            <div class="row g-3">
+              <div class="col-12 col-lg-6">
+                <label class="form-label fw-semibold" for="lesson-topic"><i class="bi bi-bookmark-star me-1 text-warning"></i>Тема на урока</label>
+                <input id="lesson-topic" class="form-control" placeholder="напр. Present Perfect — упражнения" />
+              </div>
+              <div class="col-12 col-lg-4">
+                <label class="form-label fw-semibold" for="homework-title"><i class="bi bi-house-check me-1 text-warning"></i>Домашна работа</label>
+                <input id="homework-title" class="form-control" placeholder="напр. Стр. 24, зад. 1–5" />
+              </div>
+              <div class="col-12 col-lg-2">
+                <label class="form-label fw-semibold" for="homework-due">Срок</label>
+                <input id="homework-due" class="form-control" type="date" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bulk apply -->
+        <div class="elite-daycard mt-3">
+          <div class="elite-daycard-body">
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-md-4">
+                <label class="form-label fw-semibold" for="bulk-type">Тип оценяване (за всички)</label>
+                <select id="bulk-type" class="form-select"></select>
+              </div>
+              <div class="col-6 col-md-3">
+                <label class="form-label fw-semibold" for="bulk-percent">Резултат %</label>
+                <input id="bulk-percent" class="form-control" type="number" min="0" max="100" placeholder="0–100" />
+              </div>
+              <div class="col-6 col-md-5 d-grid">
+                <button class="btn btn-outline-primary" id="bulk-apply" type="button">
+                  <i class="bi bi-lightning-charge me-1"></i>Приложи на всички
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+          <h2 class="h6 mb-0"><i class="bi bi-people me-1"></i>Ученици в групата</h2>
+          <span class="mh-progress" id="mh-progress"></span>
+        </div>
+        <div id="students-list"></div>
+      </div>
+
+      <div id="empty-state" class="elite-daycard mt-3">
+        <div class="elite-daycard-body text-center text-muted py-4">
+          <i class="bi bi-inbox fs-3 d-block mb-2"></i>Избери дата и час, за да въведеш резултати.
+        </div>
+      </div>
     </main>
 
-    <footer class="elite-footer py-4">
-      <div class="container">
-        <p class="small mb-0">Elite Class дневник • Моят час</p>
+    <!-- Sticky save bar -->
+    <div class="mh-savebar hidden" id="mh-savebar">
+      <div class="mh-savebar-inner">
+        <span id="mh-savebar-text"><i class="bi bi-pencil-square me-1"></i>Попълни резултати и запази.</span>
+        <button class="btn btn-primary" id="save-all-btn" type="button">
+          <i class="bi bi-check2-circle me-1"></i>Запази промените
+        </button>
       </div>
-    </footer>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="./src/teacher/myHours.js"></script>

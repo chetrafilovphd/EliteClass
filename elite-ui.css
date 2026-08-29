@@ -842,6 +842,60 @@ body.has-sidebar .elite-card {
 }
 
 /* ============================================================
+   "Моят час" — interactive grading UI
+   ============================================================ */
+.mh-progress { font-size: 0.78rem; font-weight: 700; color: var(--elite-navy-2); background: #eef3ff; border: 1px solid #d7e2ff; border-radius: 999px; padding: 0.25rem 0.7rem; white-space: nowrap; }
+.mh-progress.done { background: #dcfce7; color: #166534; border-color: #86efac; }
+
+.mh-student { background: #fff; border: 1px solid #e3e8f3; border-radius: 0.9rem; padding: 0.85rem 1rem; margin-bottom: 0.7rem;
+  box-shadow: 0 1px 2px rgba(11, 31, 59, 0.04); transition: box-shadow 0.15s, border-color 0.15s; }
+.mh-student:hover { box-shadow: 0 6px 18px rgba(11, 31, 59, 0.08); }
+.mh-student.is-graded { border-color: #bbf0cf; }
+.mh-student.is-absent { background: #fff7f7; border-color: #f4c2c2; }
+.mh-student.is-absent .mh-student-body { opacity: 0.45; pointer-events: none; }
+
+.mh-student-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.7rem; flex-wrap: wrap; }
+.mh-student-name { display: flex; align-items: center; gap: 0.6rem; min-width: 0; }
+.mh-avatar { width: 2.1rem; height: 2.1rem; border-radius: 50%; background: linear-gradient(135deg, #274f8c, var(--elite-navy)); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 0.78rem; flex-shrink: 0; font-family: var(--elite-font-heading); }
+.mh-name { font-weight: 700; line-height: 1.15; }
+.mh-recent { display: flex; gap: 0.25rem; flex-wrap: wrap; margin-top: 0.15rem; }
+
+.mh-abs { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; font-weight: 600; padding: 0.35rem 0.7rem; border-radius: 999px; border: 1px solid #f0b4b4; background: #fff; color: #b91c1c; cursor: pointer; transition: all 0.15s; }
+.mh-abs:hover { background: #fff0f0; }
+.mh-abs.is-active { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+
+.mh-student-body { display: grid; grid-template-columns: 7rem 1fr 1.5fr; gap: 0.75rem; align-items: end; }
+.mh-field label { display: block; font-size: 0.7rem; font-weight: 700; color: #64748b; margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.02em; }
+.mh-pct { text-align: center; font-weight: 700; font-size: 1.05rem; transition: all 0.15s; }
+.mh-pct.pct-good { border-color: #86efac; background: #f0fdf4; color: #15803d; }
+.mh-pct.pct-mid { border-color: #fcd34d; background: #fffbeb; color: #a16207; }
+.mh-pct.pct-low { border-color: #fca5a5; background: #fef2f2; color: #b91c1c; }
+
+.mh-toggle-row { display: flex; gap: 0.4rem; }
+.mh-pill { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; font-size: 0.82rem; font-weight: 600; padding: 0.45rem 0.5rem; border-radius: 0.6rem; border: 1px solid #e3e8f3; background: #fff; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.mh-pill-praise { color: #166534; }
+.mh-pill-praise:hover { background: #f0fdf4; border-color: #86efac; }
+.mh-pill-remark { color: #92400e; }
+.mh-pill-remark:hover { background: #fffbeb; border-color: #fcd34d; }
+.mh-pill-praise.is-active { background: #dcfce7; border-color: #16a34a; color: #166534; }
+.mh-pill-remark.is-active { background: #fef3c7; border-color: #d97706; color: #92400e; }
+
+.mh-note { grid-column: 1 / -1; }
+
+@media (max-width: 640px) {
+  .mh-student-body { grid-template-columns: 1fr 1fr; }
+  .mh-field.mh-feedback { grid-column: 1 / -1; }
+}
+
+/* Sticky save bar — always reachable */
+.mh-savebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; padding: 0.6rem 0.9rem;
+  background: rgba(255, 255, 255, 0.93); backdrop-filter: blur(8px); border-top: 1px solid #e3e8f3; box-shadow: 0 -6px 20px rgba(11, 31, 59, 0.08); }
+.mh-savebar-inner { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+#mh-savebar-text { font-size: 0.85rem; color: #64748b; font-weight: 600; }
+body.has-sidebar main.elite-shell { padding-bottom: 4.5rem; }
+@media (min-width: 992px) { body.has-sidebar .mh-savebar { left: 250px; } }
+
+/* ============================================================
    Dashboard v2 — page head, stat tiles, quick grid (mockup)
    ============================================================ */
 .dash-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; }
