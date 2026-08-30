@@ -207,52 +207,42 @@ function studentInitials(name) {
 
 function renderStudents() {
   if (students.length === 0) {
-    studentsListEl.innerHTML = '<div class="elite-daycard"><div class="elite-daycard-body text-center text-muted py-3"><i class="bi bi-inbox me-1"></i>В тази група още няма записани ученици.</div></div>';
+    studentsListEl.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3"><i class="bi bi-inbox me-1"></i>В тази група още няма записани ученици.</td></tr>';
     document.getElementById('mh-savebar')?.classList.remove('hidden');
     updateProgress();
     return;
   }
 
-  studentsListEl.innerHTML = students.map((s) => {
+  studentsListEl.innerHTML = students.map((s, i) => {
     const recent = (recentByStudent.get(s.student_id) || [])
-      .map((g) => `<span title="${escapeHtml(g.title || '')}">${percentBadge(g.percentage)}</span>`).join(' ');
+      .map((g) => `<span title="${escapeHtml(g.title || '')}">${percentBadge(g.percentage)}</span>`).join('');
     const sid = escapeHtml(s.student_id);
     const absCount = absenceCountByStudent.get(s.student_id) || 0;
     return `
-      <div class="mh-student" data-sid="${sid}">
-        <div class="mh-student-head">
-          <div class="mh-student-name">
-            <span class="mh-avatar">${escapeHtml(studentInitials(s.full_name))}</span>
-            <div>
-              <div class="mh-name">${escapeHtml(s.full_name)}</div>
-              <div class="mh-recent">${recent || '<span class="elite-muted small">няма оценки още</span>'}</div>
-            </div>
-          </div>
-          <button class="mh-abs js-absent" data-id="${sid}" type="button">
-            <i class="bi bi-calendar-x"></i><span class="js-abs-label">Отсъства${absCount ? ` · ${absCount}` : ''}</span>
+      <tr class="mh-row" data-sid="${sid}">
+        <td class="mh-cell-name">
+          <span class="mh-num">${i + 1}</span>
+          <span class="mh-avatar-sm">${escapeHtml(studentInitials(s.full_name))}</span>
+          <span>${escapeHtml(s.full_name)}</span>
+        </td>
+        <td>
+          <button class="mh-att js-absent" data-id="${sid}" type="button" title="${absCount ? `${absCount} отсъствия общо` : 'Присъства'}">
+            <i class="bi bi-check-circle js-abs-icon"></i><span class="js-abs-label">Присъства</span>
           </button>
-        </div>
-        <div class="mh-student-body">
-          <div class="mh-field">
-            <label>Резултат %</label>
-            <input class="form-control js-pct mh-pct" data-id="${sid}" type="number" min="0" max="100" inputmode="numeric" placeholder="—" />
+        </td>
+        <td><div class="mh-recent-sm">${recent || '<span class="elite-muted small">—</span>'}</div></td>
+        <td><input class="form-control form-control-sm js-pct mh-pct" data-id="${sid}" type="number" min="0" max="100" inputmode="numeric" placeholder="—" /></td>
+        <td><select class="form-select form-select-sm js-type mh-type" data-id="${sid}">${typeOptions('Тест')}</select></td>
+        <td>
+          <div class="mh-fb">
+            <button class="mh-fb-btn js-praise" data-id="${sid}" type="button" title="Похвала"><i class="bi bi-emoji-smile"></i></button>
+            <button class="mh-fb-btn js-remark" data-id="${sid}" type="button" title="Забележка"><i class="bi bi-exclamation-triangle"></i></button>
           </div>
-          <div class="mh-field">
-            <label>Тип</label>
-            <select class="form-select js-type" data-id="${sid}">${typeOptions('Тест')}</select>
-          </div>
-          <div class="mh-field mh-feedback">
-            <label>Отзив</label>
-            <div class="mh-toggle-row">
-              <button class="mh-pill mh-pill-praise js-praise" data-id="${sid}" type="button"><i class="bi bi-emoji-smile"></i>Похвала</button>
-              <button class="mh-pill mh-pill-remark js-remark" data-id="${sid}" type="button"><i class="bi bi-exclamation-triangle"></i>Забележка</button>
-            </div>
-          </div>
-          <div class="mh-note js-note-wrap hidden" data-id="${sid}">
-            <input class="form-control form-control-sm js-note" data-id="${sid}" placeholder="Текст на отзива…" />
-          </div>
-        </div>
-      </div>`;
+        </td>
+      </tr>
+      <tr class="mh-note-row js-note-wrap hidden" data-id="${sid}">
+        <td colspan="6"><input class="form-control form-control-sm js-note" data-id="${sid}" placeholder="Текст на отзива…" /></td>
+      </tr>`;
   }).join('');
 
   studentsListEl.querySelectorAll('.js-praise').forEach((b) => b.addEventListener('click', () => toggleRemark(b.dataset.id, 'praise')));
@@ -268,7 +258,7 @@ function renderStudents() {
 function colorPct(el) {
   el.classList.remove('pct-good', 'pct-mid', 'pct-low');
   const v = el.value === '' ? null : Number(el.value);
-  const card = el.closest('.mh-student');
+  const card = el.closest('.mh-row');
   card?.classList.toggle('is-graded', v !== null && Number.isFinite(v));
   if (v === null || !Number.isFinite(v)) return;
   if (v >= 85) el.classList.add('pct-good');
@@ -291,13 +281,12 @@ function toggleAbsent(sid) {
   const next = !absentState.get(sid);
   absentState.set(sid, next);
   const btn = studentsListEl.querySelector(`.js-absent[data-id="${CSS.escape(sid)}"]`);
-  btn?.classList.toggle('is-active', next);
-  studentsListEl.querySelector(`.mh-student[data-sid="${CSS.escape(sid)}"]`)?.classList.toggle('is-absent', next);
+  btn?.classList.toggle('is-absent', next);
+  studentsListEl.querySelector(`.mh-row[data-sid="${CSS.escape(sid)}"]`)?.classList.toggle('is-absent', next);
   const label = btn?.querySelector('.js-abs-label');
-  if (label) {
-    const base = absenceCountByStudent.get(sid) || 0;
-    label.textContent = next ? 'Отсъства ✓' : `Отсъства${base ? ` · ${base}` : ''}`;
-  }
+  const icon = btn?.querySelector('.js-abs-icon');
+  if (label) label.textContent = next ? 'Отсъства' : 'Присъства';
+  if (icon) icon.className = `js-abs-icon bi ${next ? 'bi-calendar-x' : 'bi-check-circle'}`;
 }
 
 function toggleRemark(sid, kind) {
