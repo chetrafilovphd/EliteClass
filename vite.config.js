@@ -21,6 +21,7 @@ export default defineConfig({
         calendar: fromRoot('./calendar.html'),
         schedule: fromRoot('./schedule.html'),
         parentLinks: fromRoot('./parent-links.html'),
+        statistics: fromRoot('./statistics.html'),
       },
     },
   },
