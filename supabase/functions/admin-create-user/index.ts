@@ -119,6 +119,25 @@ Deno.serve(async (req) => {
       await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
     }
     if (createErr || !created?.user) {
+      // "Already registered" — a shared parent (or a re-run). Look the existing
+      // user up BY EMAIL (the deterministic key) and return their id so the
+      // caller can still enrol/link. This is robust to different name spellings
+      // of the same parent across siblings (e.g. "Силвия Видева" vs
+      // "Силвия Пламенова Видева"), which the client's name-based fallback misses.
+      const em = (createErr?.message || '').toLowerCase();
+      if (em.includes('already') || em.includes('registered') || em.includes('exists')) {
+        let existingId: string | null = null;
+        for (let page = 1; page <= 20 && !existingId; page++) {
+          const { data: list, error: listErr } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+          if (listErr || !list) break;
+          const found = list.users.find((u) => (u.email || '').toLowerCase() === email);
+          if (found) existingId = found.id;
+          if (list.users.length < 1000) break;
+        }
+        if (existingId) {
+          return json({ ok: true, id: existingId, email, role, existed: true });
+        }
+      }
       return json({ ok: false, error: createErr?.message || 'Неуспешно създаване на акаунт.' });
     }
 
