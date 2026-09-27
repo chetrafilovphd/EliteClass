@@ -19,6 +19,7 @@ let currentRole = null;
 let lastData = null; // { groupName, students, gradesByStudent, absByStudent, from, to }
 
 const TERM_START = '2026-09-01';
+const COURSE_HOURS = 120; // 60 сесии × 2 учебни часа
 
 function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
@@ -122,7 +123,14 @@ async function loadGroupStats() {
     (att || []).forEach((a) => absByStudent.set(a.student_id, (absByStudent.get(a.student_id) || 0) + 1));
   }
 
-  lastData = { groupName, students, gradesByStudent, absByStudent, from, to };
+  // Взети учебни часове за групата (за целия курс, не само периода):
+  // всяка попълнена тема (тема 1 / тема 2) = 1 учебен час.
+  const { data: topicRows } = await supabase.from('lessons').select('topic, topic2').eq('group_id', gid);
+  const filled = (v) => String(v ?? '').trim() !== '' && String(v).trim() !== 'Час';
+  let takenHours = 0;
+  (topicRows || []).forEach((l) => { if (filled(l.topic)) takenHours += 1; if (filled(l.topic2)) takenHours += 1; });
+
+  lastData = { groupName, students, gradesByStudent, absByStudent, from, to, takenHours };
   renderTeacherStats();
   showMessage('');
 }
@@ -153,7 +161,8 @@ function renderTeacherStats() {
     <div class="stat"><div class="stat-ic ic-navy"><i class="bi bi-people-fill"></i></div><div class="stat-label">Ученици</div><div class="stat-value">${students.length}</div></div>
     <div class="stat"><div class="stat-ic ic-blue"><i class="bi bi-journal-text"></i></div><div class="stat-label">Оценки</div><div class="stat-value">${totalGrades}</div></div>
     <div class="stat"><div class="stat-ic ic-green"><i class="bi bi-graph-up"></i></div><div class="stat-label">Среден успех</div><div class="stat-value">${groupAvg === null ? '—' : groupAvg + '%'}</div></div>
-    <div class="stat"><div class="stat-ic ic-amber"><i class="bi bi-calendar-x"></i></div><div class="stat-label">Отсъствия</div><div class="stat-value">${totalAbs}</div></div>`;
+    <div class="stat"><div class="stat-ic ic-amber"><i class="bi bi-calendar-x"></i></div><div class="stat-label">Отсъствия</div><div class="stat-value">${totalAbs}</div></div>
+    <div class="stat"><div class="stat-ic ic-navy"><i class="bi bi-mortarboard-fill"></i></div><div class="stat-label">Взети часове</div><div class="stat-value">${lastData.takenHours ?? 0}<span class="stat-sub">/ ${COURSE_HOURS}</span></div></div>`;
 
   if (students.length === 0) {
     rowsEl.innerHTML = '<tr><td colspan="6" class="text-muted">В тази група още няма ученици.</td></tr>';
@@ -203,6 +212,7 @@ function exportGroupCsv() {
   if (!lastData) return;
   const rows = [
     [`Статистика — ${lastData.groupName} (${lastData.from} — ${lastData.to})`],
+    ['Взети учебни часове', `${lastData.takenHours ?? 0} / ${COURSE_HOURS}`],
     [],
     ['№', 'Ученик', 'Брой оценки', 'Среден %', 'Най-нисък %', 'Най-висок %', 'Отсъствия'],
     ...lastData.students.map((s, i) => {

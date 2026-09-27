@@ -12,7 +12,11 @@ const slotHintEl = document.getElementById('slot-hint');
 const lessonSection = document.getElementById('lesson-section');
 const emptyState = document.getElementById('empty-state');
 const topicInput = document.getElementById('lesson-topic');
+const topic2Input = document.getElementById('lesson-topic2');
+const hoursEl = document.getElementById('mh-hours');
 const homeworkTitleInput = document.getElementById('homework-title');
+
+const COURSE_HOURS = 120; // 60 сесии × 2 учебни часа
 const homeworkDueInput = document.getElementById('homework-due');
 const bulkTypeSelect = document.getElementById('bulk-type');
 const bulkPercentInput = document.getElementById('bulk-percent');
@@ -156,8 +160,11 @@ async function loadLessonScreen() {
   absentState.clear();
 
   const { data: lesson } = await supabase
-    .from('lessons').select('id, topic').eq('group_id', groupId).eq('lesson_date', dateStr).maybeSingle();
+    .from('lessons').select('id, topic, topic2').eq('group_id', groupId).eq('lesson_date', dateStr).maybeSingle();
   topicInput.value = lesson?.topic || '';
+  if (topic2Input) topic2Input.value = lesson?.topic2 || '';
+
+  await loadHours(groupId);
 
   const { data: enrolled, error: enrErr } = await supabase
     .from('group_students').select('student_id').eq('group_id', groupId);
@@ -198,6 +205,27 @@ async function loadLessonScreen() {
   lessonSection.classList.remove('hidden');
   emptyState.classList.add('hidden');
   showMessage('');
+}
+
+// Взети учебни часове за групата: всяка попълнена тема = 1 час (45 мин).
+// Всяка сесия има 2 теми (2 часа); целият курс = 120 часа.
+async function loadHours(groupId) {
+  if (!hoursEl) return;
+  const { data, error } = await supabase
+    .from('lessons').select('topic, topic2').eq('group_id', groupId);
+  if (error) { hoursEl.classList.add('hidden'); return; }
+  const filled = (v) => String(v ?? '').trim() !== '' && String(v).trim() !== 'Час';
+  let taken = 0;
+  (data || []).forEach((l) => { if (filled(l.topic)) taken += 1; if (filled(l.topic2)) taken += 1; });
+  const pct = Math.min(100, Math.round((taken / COURSE_HOURS) * 100));
+  hoursEl.innerHTML = `
+    <div class="mh-hours-top">
+      <span><i class="bi bi-mortarboard me-1"></i>Взети учебни часове</span>
+      <strong>${taken} / ${COURSE_HOURS}</strong>
+    </div>
+    <div class="mh-hours-bar"><span style="width:${pct}%"></span></div>
+    <div class="mh-hours-note">Остават ${Math.max(0, COURSE_HOURS - taken)} часа · всяка сесия = 2 часа (по 45 мин)</div>`;
+  hoursEl.classList.remove('hidden');
 }
 
 function studentInitials(name) {
@@ -318,22 +346,24 @@ saveAllBtn?.addEventListener('click', async () => {
   showMessage('Записваме...');
 
   try {
-    // 1) Lesson — one per group per date; also needed to attach absences.
+    // 1) Lesson — one per group per date, holding both academic hours' topics;
+    //    also needed to attach absences.
     const topic = topicInput.value.trim();
+    const topic2 = (topic2Input?.value || '').trim();
     const anyAbsent = [...absentState.values()].some(Boolean);
     let lessonId = null;
-    if (topic || anyAbsent) {
+    if (topic || topic2 || anyAbsent) {
       const { data: existing } = await supabase
         .from('lessons').select('id').eq('group_id', groupId).eq('lesson_date', dateStr).maybeSingle();
       if (existing?.id) {
         lessonId = existing.id;
-        if (topic) {
-          const { error } = await supabase.from('lessons').update({ topic }).eq('id', lessonId);
+        if (topic || topic2) {
+          const { error } = await supabase.from('lessons').update({ topic, topic2 }).eq('id', lessonId);
           if (error) throw new Error(`тема: ${error.message}`);
         }
       } else {
         const { data: created, error } = await supabase.from('lessons')
-          .insert({ group_id: groupId, lesson_date: dateStr, topic: topic || 'Час', created_by: currentUser.id })
+          .insert({ group_id: groupId, lesson_date: dateStr, topic: topic || 'Час', topic2: topic2 || null, created_by: currentUser.id })
           .select('id').single();
         if (error) throw new Error(`тема: ${error.message}`);
         lessonId = created.id;

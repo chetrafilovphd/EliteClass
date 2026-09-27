@@ -847,6 +847,15 @@ body.has-sidebar .elite-card {
 .mh-progress { font-size: 0.78rem; font-weight: 700; color: var(--elite-navy-2); background: #eef3ff; border: 1px solid #d7e2ff; border-radius: 999px; padding: 0.25rem 0.7rem; white-space: nowrap; }
 .mh-progress.done { background: #dcfce7; color: #166534; border-color: #86efac; }
 
+/* Учебен час — таг до темата и брояч „Взети часове" */
+.mh-hourtag { display: inline-block; margin-left: 0.35rem; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.02em; color: #7c5b12; background: #fff4d6; border: 1px solid #f4dfa0; border-radius: 999px; padding: 0.05rem 0.45rem; vertical-align: middle; }
+.mh-hours { margin-top: 0.8rem; padding: 0.7rem 0.85rem; background: #f4f7ff; border: 1px solid #dfe7fb; border-radius: 0.8rem; }
+.mh-hours-top { display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: var(--elite-navy-2); }
+.mh-hours-top strong { font-size: 1rem; color: var(--elite-navy-2); }
+.mh-hours-bar { height: 8px; border-radius: 999px; background: #e2e8f5; overflow: hidden; margin: 0.45rem 0 0.35rem; }
+.mh-hours-bar > span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #2563eb, #22c55e); transition: width 0.3s ease; }
+.mh-hours-note { font-size: 0.72rem; color: #64748b; }
+
 .mh-student { background: #fff; border: 1px solid #e3e8f3; border-radius: 0.9rem; padding: 0.85rem 1rem; margin-bottom: 0.7rem;
   box-shadow: 0 1px 2px rgba(11, 31, 59, 0.04); transition: box-shadow 0.15s, border-color 0.15s; }
 .mh-student:hover { box-shadow: 0 6px 18px rgba(11, 31, 59, 0.08); }
@@ -939,6 +948,7 @@ body.has-sidebar main.elite-shell { padding-bottom: 4.5rem; }
 .ic-amber { background: #c98a1a; }
 .stat-label { color: #64748b; font-size: 0.78rem; font-weight: 600; margin-top: 0.7rem; }
 .stat-value { font-family: var(--elite-font-heading); font-weight: 800; font-size: 1.55rem; line-height: 1.1; }
+.stat-value .stat-sub { font-family: var(--elite-font); font-weight: 600; font-size: 0.8rem; color: #94a3b8; margin-left: 0.2rem; }
 
 .quick-grid-2 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
 
