@@ -28,6 +28,8 @@ const GRADE_TYPES = ['Писане', 'Тест', 'Диктовка', 'Говор
 
 let currentUser = null;
 let currentRole = null;
+let currentLessonId = null;       // lesson row id for the picked date (for attendance)
+let currentHomeworkId = null;     // homework row id for the picked session (group+date)
 let slots = [];
 let students = [];               // [{ student_id, full_name }]
 let recentByStudent = new Map(); // student_id -> [{ percentage, title }]
@@ -163,8 +165,19 @@ async function loadLessonScreen() {
     .from('lessons').select('id, topic, topic2').eq('group_id', groupId).eq('lesson_date', dateStr).maybeSingle();
   topicInput.value = lesson?.topic || '';
   if (topic2Input) topic2Input.value = lesson?.topic2 || '';
+  currentLessonId = lesson?.id || null;
 
   await loadHours(groupId);
+
+  // Домашно за ТАЗИ сесия (по група + дата) — показва се обратно и се редактира.
+  currentHomeworkId = null;
+  const { data: hw } = await supabase
+    .from('homeworks').select('id, title, due_date')
+    .eq('group_id', groupId).eq('lesson_date', dateStr)
+    .order('created_at', { ascending: false }).limit(1).maybeSingle();
+  homeworkTitleInput.value = hw?.title || '';
+  if (homeworkDueInput) homeworkDueInput.value = hw?.due_date || '';
+  currentHomeworkId = hw?.id || null;
 
   const { data: enrolled, error: enrErr } = await supabase
     .from('group_students').select('student_id').eq('group_id', groupId);
@@ -190,16 +203,26 @@ async function loadLessonScreen() {
     recentByStudent.set(g.student_id, list);
   });
 
-  // Accumulated absences per student (for the running statistic).
+  // Accumulated absences per student (running statistic). Two-step: group's
+  // lesson ids, then attendance filtered by those ids — the embedded-filter
+  // (`lessons!inner` + `.eq('lessons.group_id', …)`) returns empty here.
   absenceCountByStudent = new Map();
-  const { data: absences } = await supabase
-    .from('attendance')
-    .select('student_id, lessons!inner(group_id)')
-    .eq('lessons.group_id', groupId)
-    .eq('status', 'absent');
-  (absences || []).forEach((a) => {
-    absenceCountByStudent.set(a.student_id, (absenceCountByStudent.get(a.student_id) || 0) + 1);
-  });
+  const { data: groupLessons } = await supabase.from('lessons').select('id').eq('group_id', groupId);
+  const groupLessonIds = (groupLessons || []).map((l) => l.id);
+  if (groupLessonIds.length) {
+    const { data: absences } = await supabase
+      .from('attendance').select('student_id').in('lesson_id', groupLessonIds).eq('status', 'absent');
+    (absences || []).forEach((a) => {
+      absenceCountByStudent.set(a.student_id, (absenceCountByStudent.get(a.student_id) || 0) + 1);
+    });
+  }
+
+  // Отсъствия, вече записани за ТОЗИ час — за да се покажат чекнати при повторно отваряне.
+  if (currentLessonId) {
+    const { data: todayAbs } = await supabase
+      .from('attendance').select('student_id').eq('lesson_id', currentLessonId).eq('status', 'absent');
+    (todayAbs || []).forEach((a) => absentState.set(a.student_id, true));
+  }
 
   renderStudents();
   lessonSection.classList.remove('hidden');
@@ -246,16 +269,17 @@ function renderStudents() {
       .map((g) => `<span title="${escapeHtml(g.title || '')}">${percentBadge(g.percentage)}</span>`).join('');
     const sid = escapeHtml(s.student_id);
     const absCount = absenceCountByStudent.get(s.student_id) || 0;
+    const isAbsent = absentState.get(s.student_id) === true;
     return `
-      <tr class="mh-row" data-sid="${sid}">
+      <tr class="mh-row${isAbsent ? ' is-absent' : ''}" data-sid="${sid}">
         <td class="mh-cell-name">
           <span class="mh-num">${i + 1}</span>
           <span class="mh-avatar-sm">${escapeHtml(studentInitials(s.full_name))}</span>
           <span>${escapeHtml(s.full_name)}</span>
         </td>
         <td>
-          <button class="mh-att js-absent" data-id="${sid}" type="button" title="${absCount ? `${absCount} отсъствия общо` : 'Присъства'}">
-            <i class="bi bi-check-circle js-abs-icon"></i><span class="js-abs-label">Присъства</span>
+          <button class="mh-att js-absent${isAbsent ? ' is-absent' : ''}" data-id="${sid}" type="button" title="${absCount ? `${absCount} отсъствия общо` : 'Присъства'}">
+            <i class="bi ${isAbsent ? 'bi-calendar-x' : 'bi-check-circle'} js-abs-icon"></i><span class="js-abs-label">${isAbsent ? 'Отсъства' : 'Присъства'}</span>
           </button>
         </td>
         <td><div class="mh-recent-sm">${recent || '<span class="elite-muted small">—</span>'}</div></td>
@@ -370,16 +394,27 @@ saveAllBtn?.addEventListener('click', async () => {
       }
     }
 
-    // 2) Homework
+    // 2) Homework for this session (one per group+date). Update the existing
+    //    row, insert a new one, or delete it if the field was cleared.
     const hwTitle = homeworkTitleInput.value.trim();
+    const hwDue = homeworkDueInput.value || null;
     if (hwTitle) {
-      const { error } = await supabase.from('homeworks').insert({
-        group_id: groupId,
-        title: hwTitle,
-        due_date: homeworkDueInput.value || null,
-        created_by: currentUser.id,
-      });
+      if (currentHomeworkId) {
+        const { error } = await supabase.from('homeworks')
+          .update({ title: hwTitle, due_date: hwDue }).eq('id', currentHomeworkId);
+        if (error) throw new Error(`домашно: ${error.message}`);
+      } else {
+        const { data: created, error } = await supabase.from('homeworks').insert({
+          group_id: groupId, title: hwTitle, due_date: hwDue,
+          lesson_date: dateStr, created_by: currentUser.id,
+        }).select('id').single();
+        if (error) throw new Error(`домашно: ${error.message}`);
+        currentHomeworkId = created.id;
+      }
+    } else if (currentHomeworkId) {
+      const { error } = await supabase.from('homeworks').delete().eq('id', currentHomeworkId);
       if (error) throw new Error(`домашно: ${error.message}`);
+      currentHomeworkId = null;
     }
 
     // 3) Results (percentage + type)
@@ -416,22 +451,25 @@ saveAllBtn?.addEventListener('click', async () => {
       if (error) throw new Error(`отзиви: ${error.message}`);
     }
 
-    // 5) Attendance — record absences so they accumulate as a statistic.
+    // 5) Attendance — reconcile this lesson's absences so they accumulate as a
+    //    statistic. Clear the lesson's rows and insert the currently-marked
+    //    absents, so un-marking also persists. Needs a lesson row: use the one
+    //    just created, else the pre-seeded one loaded for this date.
     let absentCount = 0;
-    if (lessonId) {
-      const attRows = [];
-      absentState.forEach((isAbsent, sid) => {
-        if (isAbsent) attRows.push({ lesson_id: lessonId, student_id: sid, status: 'absent' });
-      });
-      if (attRows.length) {
-        const { error } = await supabase.from('attendance').upsert(attRows, { onConflict: 'lesson_id,student_id' });
+    const effLessonId = lessonId || currentLessonId;
+    if (effLessonId) {
+      const { error: delErr } = await supabase.from('attendance').delete().eq('lesson_id', effLessonId);
+      if (delErr) throw new Error(`отсъствия: ${delErr.message}`);
+      const absentIds = [...absentState.entries()].filter(([, v]) => v).map(([sid]) => sid);
+      if (absentIds.length) {
+        const rows = absentIds.map((sid) => ({ lesson_id: effLessonId, student_id: sid, status: 'absent' }));
+        const { error } = await supabase.from('attendance').insert(rows);
         if (error) throw new Error(`отсъствия: ${error.message}`);
-        absentCount = attRows.length;
       }
+      absentCount = absentIds.length;
     }
 
     showMessage(`Записано ✓ — ${gradeRows.length} резултата, ${remarkRows.length} отзива, ${absentCount} отсъствия.`, true);
-    homeworkTitleInput.value = '';
     await loadLessonScreen();
   } catch (e) {
     showMessage(`Грешка при запис: ${e.message}`);
