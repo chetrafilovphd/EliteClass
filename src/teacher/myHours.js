@@ -284,7 +284,7 @@ function renderStudents() {
         </td>
         <td><div class="mh-recent-sm">${recent || '<span class="elite-muted small">—</span>'}</div></td>
         <td><input class="form-control form-control-sm js-pct mh-pct" data-id="${sid}" type="number" min="0" max="100" inputmode="numeric" placeholder="—" /></td>
-        <td><select class="form-select form-select-sm js-type mh-type" data-id="${sid}">${typeOptions('Тест')}</select></td>
+        <td><select class="form-select form-select-sm js-type mh-type" data-id="${sid}">${typeOptions(bulkTypeSelect?.value || 'Тест')}</select></td>
         <td>
           <div class="mh-fb">
             <button class="mh-fb-btn js-praise" data-id="${sid}" type="button" title="Похвала"><i class="bi bi-emoji-smile"></i></button>
@@ -350,13 +350,27 @@ function toggleRemark(sid, kind) {
   q('.js-note-wrap')?.classList.toggle('hidden', !next);
 }
 
+// Горният тип = тип за целия час: при смяна се прилага на всички ученици веднага.
+function applyTypeToAll() {
+  const type = bulkTypeSelect.value;
+  studentsListEl.querySelectorAll('.js-type').forEach((el) => { el.value = type; });
+}
+bulkTypeSelect?.addEventListener('change', () => {
+  applyTypeToAll();
+  showMessage(`Тип „${bulkTypeSelect.value}“ е приложен на всички ученици.`, true);
+});
+
 bulkApplyBtn?.addEventListener('click', () => {
   const pct = bulkPercentInput.value;
-  const type = bulkTypeSelect.value;
-  if (pct === '') { showMessage('Въведи резултат % за всички.'); return; }
-  studentsListEl.querySelectorAll('.js-pct').forEach((el) => { el.value = pct; });
-  studentsListEl.querySelectorAll('.js-type').forEach((el) => { el.value = type; });
-  showMessage('Приложено на всички. Не забравяй „Запази промените“.', true);
+  // Типът се прилага винаги; процентът — само ако е въведен.
+  applyTypeToAll();
+  if (pct !== '') {
+    studentsListEl.querySelectorAll('.js-pct').forEach((el) => { el.value = pct; colorPct(el); });
+    updateProgress();
+    showMessage('Тип и резултат са приложени на всички. Не забравяй „Запази промените“.', true);
+  } else {
+    showMessage('Типът е приложен на всички. Въведи резултатите по ученик и запази.', true);
+  }
 });
 
 saveAllBtn?.addEventListener('click', async () => {
