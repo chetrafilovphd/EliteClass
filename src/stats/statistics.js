@@ -70,7 +70,7 @@ async function requireAuth() {
 // --------------------------------------------------------------------------
 async function initTeacher() {
   teacherWrap.classList.remove('hidden');
-  subEl.textContent = 'Успех и присъствия по твоите групи. Можеш да сваляш репорти за родителите.';
+  subEl.textContent = 'Успех и присъствия по твоите групи. Можеш да сваляш отчети за родителите.';
 
   let q = supabase.from('groups').select('id, name').order('name');
   if (currentRole === 'teacher') q = q.eq('teacher_id', currentUser.id);
@@ -190,7 +190,7 @@ function downloadStudentReport(sid) {
   const sm = summaryFor(sid);
   const gs = lastData.gradesByStudent.get(sid) || [];
   const rows = [
-    ['ЕЗИКОВА ШКОЛА „ELITE LINGUA" — Индивидуален репорт'],
+    ['ЕЗИКОВА ШКОЛА „ELITE LINGUA" — Индивидуален отчет'],
     ['Ученик', student.name],
     ['Група', lastData.groupName],
     ['Период', `${lastData.from} — ${lastData.to}`],
@@ -262,7 +262,7 @@ async function renderChildCard(kid) {
   card.innerHTML = `
     <div class="elite-daycard-head">
       <div class="elite-daycard-title"><i class="bi bi-mortarboard"></i>${esc(kid.name)}</div>
-      <button class="btn btn-sm btn-outline-primary js-child-report"><i class="bi bi-download me-1"></i>Свали репорт</button>
+      <button class="btn btn-sm btn-outline-primary js-child-report"><i class="bi bi-download me-1"></i>Свали отчет</button>
     </div>
     <div class="elite-daycard-body">
       <div class="stat-row">
@@ -282,7 +282,7 @@ async function renderChildCard(kid) {
 
   card.querySelector('.js-child-report').addEventListener('click', () => {
     const rows = [
-      ['ЕЗИКОВА ШКОЛА „ELITE LINGUA" — Репорт за напредъка'],
+      ['ЕЗИКОВА ШКОЛА „ELITE LINGUA" — Отчет за напредъка'],
       ['Ученик', kid.name],
       ['Изготвен на', todayIso()],
       [],
