@@ -11,6 +11,7 @@ const NAV_SECTIONS = [
       { href: 'schedule.html', icon: 'bi-calendar-week-fill', label: 'Разписание', roles: '*' },
       { href: 'calendar.html', icon: 'bi-calendar-event-fill', label: 'Календар', roles: '*' },
       { href: 'statistics.html', icon: 'bi-graph-up-arrow', label: 'Статистика', roles: ['teacher', 'admin', 'parent'] },
+      { href: 'homework.html', icon: 'bi-house-check', label: 'Домашни', roles: ['student', 'parent'] },
     ],
   },
   {

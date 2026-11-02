@@ -22,6 +22,7 @@ export default defineConfig({
         schedule: fromRoot('./schedule.html'),
         parentLinks: fromRoot('./parent-links.html'),
         statistics: fromRoot('./statistics.html'),
+        homework: fromRoot('./homework.html'),
       },
     },
   },
