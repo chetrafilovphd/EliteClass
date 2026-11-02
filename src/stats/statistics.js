@@ -253,6 +253,22 @@ async function renderChildCard(kid) {
   const avg = pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : null;
   const abs = (att || []).length;
 
+  // Домашни на детето — по групата/групите му (two-step, за да няма embedded-filter проблем).
+  const { data: gs } = await supabase.from('group_students').select('group_id').eq('student_id', kid.id);
+  const gids = [...new Set((gs || []).map((r) => r.group_id).filter(Boolean))];
+  let homeworks = [];
+  if (gids.length) {
+    const { data: hw } = await supabase.from('homeworks')
+      .select('title, due_date, lesson_date, description')
+      .in('group_id', gids)
+      .order('lesson_date', { ascending: false, nullsFirst: false })
+      .limit(20);
+    homeworks = hw || [];
+  }
+  const hwRows = homeworks.length
+    ? homeworks.map((h) => `<tr><td>${esc(h.due_date || '—')}</td><td>${esc(h.title || '')}${h.description ? `<div class="elite-muted small">${esc(h.description)}</div>` : ''}</td></tr>`).join('')
+    : '<tr><td colspan="2" class="text-muted">Още няма зададени домашни.</td></tr>';
+
   const recent = (grades || []).slice(0, 12).map((g) => `
     <tr><td>${esc(g.graded_on)}</td><td>${esc(g.title || '')}</td><td>${pctBadge(g.percentage)}</td></tr>`).join('')
     || '<tr><td colspan="3" class="text-muted">Още няма оценки.</td></tr>';
@@ -278,6 +294,13 @@ async function renderChildCard(kid) {
           <tbody>${recent}</tbody>
         </table>
       </div>
+      <h3 class="h6 mt-3"><i class="bi bi-house-check me-1"></i>Домашни</h3>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead class="table-light"><tr><th>Срок</th><th>Домашно</th></tr></thead>
+          <tbody>${hwRows}</tbody>
+        </table>
+      </div>
     </div>`;
 
   card.querySelector('.js-child-report').addEventListener('click', () => {
@@ -292,6 +315,10 @@ async function renderChildCard(kid) {
       [],
       ['Дата', 'Тип', 'Резултат %'],
       ...(grades || []).map((g) => [g.graded_on, g.title || '', g.percentage ?? '']),
+      [],
+      ['Домашни'],
+      ['Срок', 'Домашно', 'Описание'],
+      ...homeworks.map((h) => [h.due_date || '', h.title || '', h.description || '']),
     ];
     const safe = kid.name.replace(/[^\p{L}\p{N}]+/gu, '_');
     downloadCsv(`report-${safe}-${fileStamp()}.csv`, rows);
