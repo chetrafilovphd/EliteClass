@@ -195,7 +195,7 @@ async function loadLessonScreen() {
 
   recentByStudent = new Map();
   const { data: grades } = await supabase
-    .from('grades').select('student_id, percentage, title, graded_on')
+    .from('grades').select('id, student_id, percentage, title, graded_on')
     .eq('group_id', groupId).order('graded_on', { ascending: false }).limit(200);
   (grades || []).forEach((g) => {
     const list = recentByStudent.get(g.student_id) || [];
@@ -266,7 +266,7 @@ function renderStudents() {
 
   studentsListEl.innerHTML = students.map((s, i) => {
     const recent = (recentByStudent.get(s.student_id) || [])
-      .map((g) => `<span title="${escapeHtml(g.title || '')}">${percentBadge(g.percentage)}</span>`).join('');
+      .map((g) => `<button type="button" class="mh-grade-edit js-edit-grade" data-id="${escapeHtml(g.id)}" data-pct="${escapeHtml(g.percentage)}" data-type="${escapeHtml(g.title || '')}" data-date="${escapeHtml(g.graded_on || '')}" data-name="${escapeHtml(s.full_name)}" title="${escapeHtml((g.title || '') + ' · ' + (g.graded_on || '') + ' · натисни за редакция')}">${percentBadge(g.percentage)}</button>`).join('');
     const sid = escapeHtml(s.student_id);
     const absCount = absenceCountByStudent.get(s.student_id) || 0;
     const isAbsent = absentState.get(s.student_id) === true;
@@ -301,9 +301,79 @@ function renderStudents() {
   studentsListEl.querySelectorAll('.js-remark').forEach((b) => b.addEventListener('click', () => toggleRemark(b.dataset.id, 'remark')));
   studentsListEl.querySelectorAll('.js-absent').forEach((b) => b.addEventListener('click', () => toggleAbsent(b.dataset.id)));
   studentsListEl.querySelectorAll('.js-pct').forEach((el) => el.addEventListener('input', () => { colorPct(el); updateProgress(); }));
+  studentsListEl.querySelectorAll('.js-edit-grade').forEach((b) => b.addEventListener('click', () => openGradeEditor(b.dataset)));
 
   document.getElementById('mh-savebar')?.classList.remove('hidden');
   updateProgress();
+}
+
+// --- Редакция на вече въведена оценка (при грешка) ------------------------
+let gradeModal = null;
+let editingGradeId = null;
+function ensureGradeModal() {
+  if (gradeModal) return gradeModal;
+  const wrap = document.createElement('div');
+  wrap.className = 'mh-modal-backdrop hidden';
+  wrap.innerHTML = `
+    <div class="mh-modal" role="dialog" aria-modal="true" aria-label="Редакция на оценка">
+      <h3 class="mh-modal-title"><i class="bi bi-pencil-square me-1"></i>Редакция на оценка</h3>
+      <div class="mh-modal-sub" id="gm-sub"></div>
+      <label class="form-label fw-semibold mt-2 mb-1" for="gm-pct">Резултат %</label>
+      <input id="gm-pct" class="form-control" type="number" min="0" max="100" inputmode="numeric" />
+      <label class="form-label fw-semibold mt-2 mb-1" for="gm-type">Тип</label>
+      <select id="gm-type" class="form-select"></select>
+      <p class="msg small mt-2 mb-0" id="gm-msg"></p>
+      <div class="mh-modal-actions">
+        <button class="btn btn-outline-danger btn-sm" id="gm-delete" type="button"><i class="bi bi-trash me-1"></i>Изтрий</button>
+        <span class="flex-grow-1"></span>
+        <button class="btn btn-outline-secondary btn-sm" id="gm-cancel" type="button">Отказ</button>
+        <button class="btn btn-primary btn-sm" id="gm-save" type="button"><i class="bi bi-check2 me-1"></i>Запази</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  wrap.querySelector('#gm-type').innerHTML = typeOptions('Тест');
+  wrap.addEventListener('click', (e) => { if (e.target === wrap) closeGradeModal(); });
+  wrap.querySelector('#gm-cancel').addEventListener('click', closeGradeModal);
+  wrap.querySelector('#gm-save').addEventListener('click', saveGradeEdit);
+  wrap.querySelector('#gm-delete').addEventListener('click', deleteGradeEdit);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !wrap.classList.contains('hidden')) closeGradeModal(); });
+  gradeModal = wrap;
+  return wrap;
+}
+function openGradeEditor(ds) {
+  const m = ensureGradeModal();
+  editingGradeId = ds.id;
+  m.querySelector('#gm-sub').textContent = [ds.name, ds.type, ds.date].filter(Boolean).join(' · ');
+  m.querySelector('#gm-pct').value = ds.pct;
+  m.querySelector('#gm-type').value = ds.type || 'Тест';
+  const msg = m.querySelector('#gm-msg'); msg.textContent = ''; msg.className = 'msg small mt-2 mb-0';
+  m.classList.remove('hidden');
+  m.querySelector('#gm-pct').focus();
+}
+function closeGradeModal() { gradeModal?.classList.add('hidden'); editingGradeId = null; }
+function gmError(text) { const msg = gradeModal.querySelector('#gm-msg'); msg.textContent = text; msg.className = 'msg small mt-2 mb-0 text-danger'; }
+async function saveGradeEdit() {
+  if (!editingGradeId) return;
+  const pct = Number(gradeModal.querySelector('#gm-pct').value);
+  const type = gradeModal.querySelector('#gm-type').value;
+  if (!Number.isFinite(pct) || pct < 0 || pct > 100) { gmError('Въведи процент между 0 и 100.'); return; }
+  const btn = gradeModal.querySelector('#gm-save'); btn.disabled = true;
+  const { error } = await supabase.from('grades').update({ percentage: pct, title: type }).eq('id', editingGradeId);
+  btn.disabled = false;
+  if (error) { gmError(`Грешка: ${error.message}`); return; }
+  closeGradeModal();
+  showMessage('Оценката е редактирана ✓', true);
+  await loadLessonScreen();
+}
+async function deleteGradeEdit() {
+  if (!editingGradeId) return;
+  const btn = gradeModal.querySelector('#gm-delete'); btn.disabled = true;
+  const { error } = await supabase.from('grades').delete().eq('id', editingGradeId);
+  btn.disabled = false;
+  if (error) { gmError(`Грешка: ${error.message}`); return; }
+  closeGradeModal();
+  showMessage('Оценката е изтрита ✓', true);
+  await loadLessonScreen();
 }
 
 // Colour the % input by band as the teacher types, and mark the card as graded.
