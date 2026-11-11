@@ -266,7 +266,7 @@ function renderStudents() {
 
   studentsListEl.innerHTML = students.map((s, i) => {
     const recent = (recentByStudent.get(s.student_id) || [])
-      .map((g) => `<button type="button" class="mh-grade-edit js-edit-grade" data-id="${escapeHtml(g.id)}" data-pct="${escapeHtml(g.percentage)}" data-type="${escapeHtml(g.title || '')}" data-date="${escapeHtml(g.graded_on || '')}" data-name="${escapeHtml(s.full_name)}" title="${escapeHtml((g.title || '') + ' · ' + (g.graded_on || '') + ' · натисни за редакция')}">${percentBadge(g.percentage)}</button>`).join('');
+      .map((g) => `<button type="button" class="mh-grade-edit js-edit-grade" data-id="${escapeHtml(g.id)}" data-pct="${escapeHtml(g.percentage)}" data-type="${escapeHtml(g.title || '')}" data-date="${escapeHtml(g.graded_on || '')}" data-name="${escapeHtml(s.full_name)}" title="${escapeHtml((g.title || '') + ' · ' + (g.graded_on || '') + ' · натисни за редакция')}">${percentBadge(g.percentage)}<i class="bi bi-pencil-fill mh-grade-pen"></i></button>`).join('');
     const sid = escapeHtml(s.student_id);
     const absCount = absenceCountByStudent.get(s.student_id) || 0;
     const isAbsent = absentState.get(s.student_id) === true;

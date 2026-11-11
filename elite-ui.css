@@ -848,10 +848,12 @@ body.has-sidebar .elite-card {
 .mh-progress.done { background: #dcfce7; color: #166534; border-color: #86efac; }
 
 /* Кликваема скорошна оценка → редакция */
-.mh-grade-edit { border: 0; background: transparent; padding: 0; cursor: pointer; line-height: 1; border-radius: 7px; }
-.mh-grade-edit:hover { filter: brightness(0.96); transform: translateY(-1px); }
+.mh-grade-edit { position: relative; display: inline-flex; align-items: center; gap: 2px; border: 1px dashed #cbd5e8; background: #fff; padding: 2px 4px; cursor: pointer; line-height: 1; border-radius: 8px; }
+.mh-grade-edit:hover { border-color: var(--gold, #d79921); background: #fffdf5; }
 .mh-grade-edit:focus-visible { outline: 2px solid #2f6bff; outline-offset: 2px; }
-.mh-recent-sm { display: flex; gap: 4px; flex-wrap: wrap; }
+.mh-grade-pen { font-size: 0.6rem; color: #94a3b8; }
+.mh-grade-edit:hover .mh-grade-pen { color: var(--gold, #d79921); }
+.mh-recent-sm { display: flex; gap: 5px; flex-wrap: wrap; }
 
 /* Прозорец за редакция на оценка */
 .mh-modal-backdrop { position: fixed; inset: 0; background: rgba(5, 12, 28, 0.45); display: flex; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
