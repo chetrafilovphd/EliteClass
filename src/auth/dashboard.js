@@ -551,6 +551,25 @@ async function loadRolePanels(profile) {
 async function hydrateProfileForm(profile) {
   profileFullNameEl.value = profile.full_name || '';
   profileEmailEl.value = currentSession.user.email || '';
+  // Името и имейлът за вход са училищни данни → заключени за ученици и родители,
+  // за да не се преименуват/объркват случайно (това чупи напредък, домашни и репорти).
+  const staff = profile.role === 'admin' || profile.role === 'teacher';
+  profileFullNameEl.readOnly = !staff;
+  if (profileEmailEl) profileEmailEl.readOnly = !staff;
+  if (!staff) {
+    profileFullNameEl.title = 'Името се управлява от училището.';
+    let note = document.getElementById('profile-lock-note');
+    if (!note) {
+      note = document.createElement('div');
+      note.id = 'profile-lock-note';
+      note.className = 'form-text';
+      note.innerHTML = '<i class="bi bi-lock me-1"></i>Името и имейлът за вход се управляват от училището. Можеш да смениш само телефон и снимка.';
+      profileFullNameEl.insertAdjacentElement('afterend', note);
+    }
+    note.classList.remove('hidden');
+  } else {
+    document.getElementById('profile-lock-note')?.classList.add('hidden');
+  }
   profilePhoneEl.value = profile.phone || '';
   profileAvatarUrlEl.value = profile.avatar_url || '';
   setAvatarPreview(profile.avatar_url);
@@ -595,8 +614,19 @@ profileForm?.addEventListener('submit', async (e) => {
   saveProfileBtn.disabled = true;
 
   const userId = currentSession.user.id;
-  const fullName = profileFullNameEl.value.trim();
-  const newEmail = profileEmailEl.value.trim().toLowerCase();
+  const staff = currentProfile.role === 'admin' || currentProfile.role === 'teacher';
+  let fullName = profileFullNameEl.value.trim();
+  if (staff) {
+    // Валидация: пълно име (поне две думи с по ≥2 букви) — спира „Съеде" и подобни.
+    if (fullName && fullName.split(/\s+/).filter((w) => w.length >= 2).length < 2) {
+      showProfileMessage('Въведи пълно име — поне две думи (име и фамилия).');
+      saveProfileBtn.disabled = false;
+      return;
+    }
+  } else {
+    fullName = currentProfile.full_name; // заключено за ученици/родители
+  }
+  const newEmail = staff ? profileEmailEl.value.trim().toLowerCase() : (currentSession.user.email || '').toLowerCase();
   const phone = profilePhoneEl.value.trim();
   const avatarUrl = profileAvatarUrlEl.value.trim();
   const title = profileTitleEl.value;
